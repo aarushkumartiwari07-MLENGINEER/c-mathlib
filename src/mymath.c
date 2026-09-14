@@ -22,9 +22,9 @@ int is_prime(int n) {
      * Any integer can be expressed as (6k + i) for i in {0, 1, 2, 3, 4, 5}.
      * Since 6k, 6k+2, 6k+3, 6k+4 are divisible by 2 or 3, we only need to test
      * 6k-1 and 6k+1 (starting at i = 5).
-     * Using i * i <= n avoids floating-point operations.
+     * Using (long long)i * i <= n avoids 32-bit signed overflow when n is close to INT_MAX.
      */
-    for (int i = 5; i * i <= n; i += 6) {
+    for (int i = 5; (long long)i * i <= n; i += 6) {
         if (n % i == 0 || n % (i + 2) == 0) {
             return 0;
         }

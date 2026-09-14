@@ -105,6 +105,12 @@ def is_prime(n: int) -> bool:
     if not isinstance(n, int) or isinstance(n, bool):
         raise TypeError(f"is_prime() argument must be an integer, got {type(n).__name__}")
 
+    # Ensure n fits within standard 32-bit signed integer range (C int)
+    if not (-2147483648 <= n <= 2147483647):
+        raise OverflowError(
+            f"is_prime() argument {n} exceeds 32-bit signed integer range (-2147483648 to 2147483647)"
+        )
+
     # Call the native C function and convert the integer return code (0 or 1) to a Python boolean
     result = _c_is_prime(n)
     return bool(result)

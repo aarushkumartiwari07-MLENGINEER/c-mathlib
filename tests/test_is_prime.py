@@ -55,6 +55,12 @@ class TestIsPrime(unittest.TestCase):
         self.assertFalse(is_prime(542))
         self.assertFalse(is_prime(100000))
 
+    def test_large_boundaries(self):
+        """Test boundary 32-bit primes and composites."""
+        # 2^31 - 1 is the 8th Mersenne prime
+        self.assertTrue(is_prime(2147483647))
+        self.assertFalse(is_prime(2147483646))
+
     def test_invalid_types(self):
         """Ensure non-integer types raise TypeError."""
         with self.assertRaises(TypeError):
@@ -68,6 +74,17 @@ class TestIsPrime(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             is_prime(True)  # type: ignore
+
+    def test_overflow_error(self):
+        """Ensure values outside 32-bit signed integer range raise OverflowError."""
+        with self.assertRaises(OverflowError):
+            is_prime(2147483648)
+
+        with self.assertRaises(OverflowError):
+            is_prime(-2147483649)
+
+        with self.assertRaises(OverflowError):
+            is_prime(2**40)
 
 
 if __name__ == "__main__":
