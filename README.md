@@ -14,28 +14,40 @@ A lightweight mathematical library whose core implementations are written in nat
 
 ---
 
+## Supported Mathematical Functions
+
+| Function | Description | Supported Input Range | Edge Case / Invalid Handling |
+| :--- | :--- | :--- | :--- |
+| `is_prime(n)` | Check whether an integer $n$ is prime | 32-bit signed integers | Negative, $0, 1 \rightarrow \text{False}$ |
+| `gcd(a, b)` | Greatest Common Divisor (Euclidean algorithm) | 64-bit signed integers | Returns non-negative; $\gcd(0,0)=0$ |
+| `lcm(a, b)` | Least Common Multiple (via GCD) | 64-bit signed integers | Returns non-negative; $\text{lcm}(0,x)=0$ |
+| `factorial(n)` | Factorial of non-negative integer $n!$ | $0 \le n \le 20$ (64-bit limit) | $n < 0 \rightarrow \text{ValueError}$, $n > 20 \rightarrow \text{OverflowError}$ |
+| `fibonacci(n)` | $n$-th Fibonacci sequence number ($F_0=0, F_1=1$) | $0 \le n \le 92$ (64-bit limit) | $n < 0 \rightarrow \text{ValueError}$, $n > 92 \rightarrow \text{OverflowError}$ |
+
+---
+
 ## Architecture
 
 ```text
-Python Application (e.g. from c_mathlib import is_prime)
+Python Application (e.g. from c_mathlib import is_prime, gcd, lcm, factorial, fibonacci)
        │
        ▼
 Python Wrapper (`c_mathlib/core.py`)
-  • Validates input types in Python
-  • Calls C function symbol via ctypes
-  • Translates integer return code (0/1) to Python bool
+  • Validates input types & ranges in Python
+  • Calls C foreign function symbols via ctypes
+  • Translates return codes and data types
        │
        ▼
 Python `ctypes` FFI Layer
-  • Maps Python arguments to C ABI: `argtypes = [c_int]`
-  • Defines return register convention: `restype = c_int`
+  • Maps Python arguments to C ABI (`argtypes`)
+  • Defines return register conventions (`restype`)
        │
        ▼
 Compiled Dynamic Library (`libmymath.dll` / `.so` / `.dylib`)
        │
        ▼
 C Implementation (`src/mymath.c`, `src/mymath.h`)
-  • Computes primality directly on CPU with zero runtime overhead
+  • Computes mathematical primitives directly on CPU in native C
 ```
 
 ---
@@ -45,19 +57,22 @@ C Implementation (`src/mymath.c`, `src/mymath.h`)
 ```text
 c-mathlib/
 ├── src/
-│   ├── mymath.h          # C header declaring functions and export macros
-│   └── mymath.c          # C implementation of mathematical algorithms
+│   ├── mymath.h                      # C header declaring functions and export macros
+│   └── mymath.c                      # C implementation of mathematical algorithms
 ├── c_mathlib/
-│   ├── __init__.py       # Public package API
-│   └── core.py           # ctypes loader and Python wrappers
+│   ├── __init__.py                   # Public package API
+│   ├── core.py                       # ctypes loader and Python wrappers
+│   └── libmymath.dll                 # Compiled native dynamic library
 ├── tests/
-│   └── test_is_prime.py  # Unit test suite (edge cases & type checks)
+│   ├── test_is_prime.py              # Tests for primality testing
+│   ├── test_gcd_lcm.py               # Tests for GCD and LCM
+│   └── test_factorial_fibonacci.py   # Tests for Factorial and Fibonacci
 ├── examples/
-│   └── basic.py          # Runnable demonstration script
-├── pyproject.toml        # PEP 517/621 package metadata & configuration
-├── .gitignore            # Git ignore rules for build and cache artifacts
-├── LICENSE               # MIT License
-└── README.md             # Project documentation
+│   └── basic.py                      # Runnable demonstration script
+├── pyproject.toml                    # PEP 517/621 package metadata & configuration
+├── .gitignore                        # Git ignore rules for build and cache artifacts
+├── LICENSE                           # MIT License
+└── README.md                         # Project documentation
 ```
 
 ---
@@ -113,11 +128,29 @@ This registers `c_mathlib` into your current Python environment, allowing any sc
 ## Usage
 
 ```python
-from c_mathlib import is_prime
+from c_mathlib import (
+    is_prime,
+    gcd,
+    lcm,
+    factorial,
+    fibonacci,
+)
 
-print(is_prime(97))   # True (computed in C)
-print(is_prime(100))  # False (computed in C)
-print(is_prime(-5))   # False
+# Primality
+print(is_prime(97))      # True
+print(is_prime(100))     # False
+
+# Greatest Common Divisor & Least Common Multiple
+print(gcd(48, 18))       # 6
+print(lcm(12, 18))       # 36
+
+# Factorial
+print(factorial(5))      # 120
+print(factorial(20))     # 2432902008176640000
+
+# Fibonacci sequence (0-indexed: F_0 = 0, F_1 = 1)
+print(fibonacci(10))     # 55
+print(fibonacci(50))     # 12586269025
 ```
 
 Run the included example script:
@@ -129,7 +162,7 @@ python examples/basic.py
 
 ## Running Tests
 
-Run the test suite using Python's built-in `unittest` module:
+Run the full test suite using Python's built-in `unittest` module:
 
 ```powershell
 python -m unittest discover -s tests -v
@@ -147,16 +180,16 @@ pytest -v
 - **Symbol Visibility & Exporting**: Understanding `__declspec(dllexport)` on Windows vs. default symbol visibility on ELF/Mach-O systems.
 - **Dynamic Linking**: How dynamic linkers find and map `.dll` / `.so` files into the process's virtual address space at runtime.
 - **Foreign Function Interfaces**: Why `argtypes` and `restype` are necessary in `ctypes` to correctly align stack frames and register conventions according to the C Application Binary Interface (ABI).
+- **Domain & Precision Boundaries**: Handling signed 64-bit integer limits across C and Python with graceful overflow and type errors.
 - **Python Packaging with Native Extensions**: How to bundle compiled binary artifacts (`package_data`) alongside pure Python code inside `pyproject.toml`.
 
 ---
 
 ## Planned Future Functions
 
-The core architecture will expand to support additional mathematical primitives:
+The core architecture will continue to expand with additional mathematical functions:
 
-- `gcd(int a, int b)` (Greatest Common Divisor)
-- `lcm(int a, int b)` (Least Common Multiple)
-- `factorial(int n)`
-- `fibonacci(int n)`
-- Modular exponentiation and combinatorial primitives
+- `pow_mod(base, exp, mod)` (Modular exponentiation)
+- `nCr(n, r)` / `nPr(n, r)` (Combinations and permutations)
+- `is_perfect_square(n)`
+- Prime factorization helpers
