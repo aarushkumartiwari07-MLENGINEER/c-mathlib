@@ -8,12 +8,15 @@ from c_mathlib import (
     lcm,
     factorial,
     fibonacci,
+    mod_pow,
+    extended_gcd,
+    mod_inverse,
     __version__,
 )
 
 
 def main():
-    print(f"=== c-mathlib v{__version__} Demonstration ===")
+    print(f"=== c-mathlib v{__version__} Arithmetic & Number Theory Demonstration ===")
     print("All mathematical computations are executed in native C via ctypes.\n")
 
     # 1. Primality Testing
@@ -32,17 +35,33 @@ def main():
         l = lcm(a, b)
         print(f"gcd({a:5d}, {b:5d}) = {g:5d}    |    lcm({a:5d}, {b:5d}) = {l:5d}")
 
-    # 3. Factorial
-    print("\n--- 3. Factorial ---")
-    for n in [0, 1, 3, 5, 7, 10, 12, 20]:
-        print(f"{n:2d}! = {factorial(n)}")
+    # 3. Factorial & Fibonacci
+    print("\n--- 3. Factorial & Fibonacci ---")
+    for n in [0, 1, 5, 10, 15, 20]:
+        print(f"{n:2d}! = {factorial(n):20d}    |    F({n:2d}) = {fibonacci(n):10d}")
 
-    # 4. Fibonacci Sequence
-    print("\n--- 4. Fibonacci Sequence ---")
-    for n in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 50, 92]:
-        print(f"F({n:2d}) = {fibonacci(n)}")
+    # 4. Modular Exponentiation
+    print("\n--- 4. Modular Exponentiation (mod_pow) ---")
+    pow_cases = [(2, 10, 1000), (3, 4, 5), (7, 100, 13), (5, 1000000, 7)]
+    for base, exp, mod in pow_cases:
+        res = mod_pow(base, exp, mod)
+        print(f"({base}^{exp}) mod {mod} = {res}")
+
+    # 5. Extended Euclidean Algorithm (Bézout's identity)
+    print("\n--- 5. Extended Euclidean Algorithm (extended_gcd) ---")
+    for a, b in [(30, 12), (35, 15), (1071, 462), (17, 19)]:
+        g, x, y = extended_gcd(a, b)
+        print(f"extended_gcd({a:4d}, {b:4d}) -> gcd={g:2d}, x={x:3d}, y={y:3d}  |  {a}*({x}) + {b}*({y}) = {a*x + b*y}")
+
+    # 6. Modular Multiplicative Inverse
+    print("\n--- 6. Modular Inverse (mod_inverse) ---")
+    inv_cases = [(3, 11), (10, 17), (7, 26), (15, 26)]
+    for a, m in inv_cases:
+        inv = mod_inverse(a, m)
+        print(f"mod_inverse({a:2d}, mod {m:2d}) = {inv:2d}  (check: ({a} * {inv}) % {m} = {(a * inv) % m})")
 
 
 if __name__ == "__main__":
     main()
+
 
