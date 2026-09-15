@@ -112,4 +112,87 @@ long long fibonacci(int n) {
     return curr;
 }
 
+long long mod_pow(long long base, long long exponent, long long modulus) {
+    if (modulus <= 0 || exponent < 0) {
+        return -1;
+    }
+    if (modulus == 1) {
+        return 0;
+    }
+
+    long long result = 1;
+    base = base % modulus;
+    if (base < 0) {
+        base += modulus;
+    }
+
+    /* Exponentiation by squaring: O(log exponent) complexity */
+    while (exponent > 0) {
+        if (exponent & 1) {
+            result = (long long)(((unsigned __int128)result * (unsigned long long)base) % (unsigned long long)modulus);
+        }
+        base = (long long)(((unsigned __int128)base * (unsigned long long)base) % (unsigned long long)modulus);
+        exponent >>= 1;
+    }
+
+    return result;
+}
+
+long long extended_gcd(long long a, long long b, long long *x, long long *y) {
+    long long old_r = a, r = b;
+    long long old_s = 1, s = 0;
+    long long old_t = 0, t = 1;
+
+    /* Iterative Extended Euclidean algorithm */
+    while (r != 0) {
+        long long quotient = old_r / r;
+        long long temp_r = old_r - quotient * r;
+        old_r = r;
+        r = temp_r;
+
+        long long temp_s = old_s - quotient * s;
+        old_s = s;
+        s = temp_s;
+
+        long long temp_t = old_t - quotient * t;
+        old_t = t;
+        t = temp_t;
+    }
+
+    /* Ensure returned GCD is non-negative and Bézout identity a*x + b*y = g holds */
+    if (old_r < 0) {
+        old_r = -old_r;
+        old_s = -old_s;
+        old_t = -old_t;
+    }
+
+    if (x != (void*)0) {
+        *x = old_s;
+    }
+    if (y != (void*)0) {
+        *y = old_t;
+    }
+
+    return old_r;
+}
+
+long long mod_inverse(long long a, long long modulus) {
+    if (modulus <= 1) {
+        return -1;
+    }
+
+    long long x, y;
+    long long g = extended_gcd(a, modulus, &x, &y);
+
+    if (g != 1) {
+        /* Modular inverse exists if and only if gcd(a, modulus) == 1 */
+        return -1;
+    }
+
+    /* Map Bézout coefficient to standard range [0, modulus - 1] */
+    long long inv = (x % modulus + modulus) % modulus;
+    return inv;
+}
+
+
 

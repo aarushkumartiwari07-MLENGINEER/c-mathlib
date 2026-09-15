@@ -94,8 +94,26 @@ _c_fibonacci = _lib.fibonacci
 _c_fibonacci.argtypes = [ctypes.c_int]
 _c_fibonacci.restype = ctypes.c_longlong
 
+_c_mod_pow = _lib.mod_pow
+_c_mod_pow.argtypes = [ctypes.c_longlong, ctypes.c_longlong, ctypes.c_longlong]
+_c_mod_pow.restype = ctypes.c_longlong
+
+_c_extended_gcd = _lib.extended_gcd
+_c_extended_gcd.argtypes = [
+    ctypes.c_longlong,
+    ctypes.c_longlong,
+    ctypes.POINTER(ctypes.c_longlong),
+    ctypes.POINTER(ctypes.c_longlong),
+]
+_c_extended_gcd.restype = ctypes.c_longlong
+
+_c_mod_inverse = _lib.mod_inverse
+_c_mod_inverse.argtypes = [ctypes.c_longlong, ctypes.c_longlong]
+_c_mod_inverse.restype = ctypes.c_longlong
+
 _INT64_MIN = -9223372036854775808
 _INT64_MAX = 9223372036854775807
+
 
 
 
@@ -287,5 +305,137 @@ def fibonacci(n: int) -> int:
         raise OverflowError("fibonacci() index exceeds 64-bit integer range (n <= 92)")
 
     return int(_c_fibonacci(n))
+
+
+def mod_pow(base: int, exponent: int, modulus: int) -> int:
+    """
+    Compute (base ^ exponent) % modulus using binary exponentiation (exponentiation by squaring).
+
+    Executed in native C in O(log exponent) time complexity.
+    Exponentiation by squaring decomposes the exponent into powers of two,
+    avoiding both astronomical intermediate values and slow O(exponent) naive multiplication loops.
+
+    Parameters
+    ----------
+    base : int
+        The base integer.
+    exponent : int
+        The non-negative exponent (power).
+    modulus : int
+        The positive integer modulus (> 0).
+
+    Returns
+    -------
+    int
+        (base ^ exponent) % modulus in the range [0, modulus - 1].
+
+    Raises
+    ------
+    TypeError
+        If any argument is not an integer.
+    ValueError
+        If modulus <= 0 or exponent < 0.
+    OverflowError
+        If any argument exceeds the 64-bit signed integer range.
+    """
+    for name, val in [("base", base), ("exponent", exponent), ("modulus", modulus)]:
+        if not isinstance(val, int) or isinstance(val, bool):
+            raise TypeError(f"mod_pow() {name} must be an integer, got {type(val).__name__}")
+        if not (_INT64_MIN <= val <= _INT64_MAX):
+            raise OverflowError(f"mod_pow() {name} must fit within 64-bit signed integer range")
+
+    if modulus <= 0:
+        raise ValueError(f"mod_pow() modulus must be a positive integer (> 0), got {modulus}")
+    if exponent < 0:
+        raise ValueError(f"mod_pow() exponent must be non-negative (>= 0), got {exponent}")
+
+    return int(_c_mod_pow(base, exponent, modulus))
+
+
+def extended_gcd(a: int, b: int) -> tuple[int, int, int]:
+    """
+    Compute the Extended Euclidean Algorithm for two integers a and b.
+
+    Finds the greatest common divisor g = gcd(|a|, |b|) along with Bézout coefficients
+    x and y satisfying the identity:
+        a * x + b * y = g
+
+    Parameters
+    ----------
+    a : int
+        First integer.
+    b : int
+        Second integer.
+
+    Returns
+    -------
+    tuple[int, int, int]
+        A 3-tuple (g, x, y) where g is the non-negative GCD, and x, y are Bézout coefficients.
+
+    Raises
+    ------
+    TypeError
+        If either a or b is not an integer.
+    OverflowError
+        If either a or b exceeds the 64-bit signed integer range.
+    """
+    for name, val in [("a", a), ("b", b)]:
+        if not isinstance(val, int) or isinstance(val, bool):
+            raise TypeError(f"extended_gcd() argument {name} must be an integer, got {type(val).__name__}")
+        if not (_INT64_MIN <= val <= _INT64_MAX):
+            raise OverflowError(f"extended_gcd() argument {name} must fit within 64-bit signed integer range")
+
+    c_x = ctypes.c_longlong()
+    c_y = ctypes.c_longlong()
+    g = _c_extended_gcd(a, b, ctypes.byref(c_x), ctypes.byref(c_y))
+    return (int(g), int(c_x.value), int(c_y.value))
+
+
+def mod_inverse(a: int, modulus: int) -> int:
+    """
+    Compute the modular multiplicative inverse of a modulo m, such that:
+        (a * x) = 1 (mod m)
+
+    Computed in native C using the Extended Euclidean Algorithm rather than brute force.
+    The inverse exists if and only if a and modulus are coprime (i.e., gcd(a, modulus) == 1).
+
+    Parameters
+    ----------
+    a : int
+        The integer whose modular inverse is sought.
+    modulus : int
+        The integer modulus (must be > 1).
+
+    Returns
+    -------
+    int
+        The unique modular multiplicative inverse x in the range [0, modulus - 1].
+
+    Raises
+    ------
+    TypeError
+        If either a or modulus is not an integer.
+    ValueError
+        If modulus <= 1 or if no modular inverse exists (gcd(a, modulus) != 1).
+    OverflowError
+        If either a or modulus exceeds the 64-bit signed integer range.
+    """
+    for name, val in [("a", a), ("modulus", modulus)]:
+        if not isinstance(val, int) or isinstance(val, bool):
+            raise TypeError(f"mod_inverse() argument {name} must be an integer, got {type(val).__name__}")
+        if not (_INT64_MIN <= val <= _INT64_MAX):
+            raise OverflowError(f"mod_inverse() argument {name} must fit within 64-bit signed integer range")
+
+    if modulus <= 1:
+        raise ValueError(f"mod_inverse() modulus must be greater than 1, got {modulus}")
+
+    result = _c_mod_inverse(a, modulus)
+    if result == -1:
+        raise ValueError(
+            f"mod_inverse() does not exist: {a} and {modulus} are not coprime (gcd != 1)"
+        )
+
+    return int(result)
+
 
 

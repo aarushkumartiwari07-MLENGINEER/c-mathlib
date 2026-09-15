@@ -92,10 +92,55 @@ MYMATH_API long long factorial(int n);
  */
 MYMATH_API long long fibonacci(int n);
 
+/**
+ * Computes (base ^ exponent) % modulus using exponentiation by squaring (O(log exponent)).
+ *
+ * Properties & Constraints:
+ * - Requires modulus > 0 and exponent >= 0.
+ * - Negative base is normalized to [0, modulus - 1].
+ * - Returns -1 if modulus <= 0 or exponent < 0.
+ *
+ * @param base The base integer.
+ * @param exponent Non-negative power to raise base to.
+ * @param modulus Positive modulus.
+ * @return (base ^ exponent) % modulus, or -1 on invalid domain.
+ */
+MYMATH_API long long mod_pow(long long base, long long exponent, long long modulus);
+
+/**
+ * Extended Euclidean Algorithm: computes gcd(a, b) and Bézout coefficients x and y
+ * such that: a*x + b*y = gcd(a, b).
+ *
+ * @param a First integer.
+ * @param b Second integer.
+ * @param x Output pointer for Bézout coefficient of a.
+ * @param y Output pointer for Bézout coefficient of b.
+ * @return The greatest common divisor gcd(|a|, |b|).
+ */
+MYMATH_API long long extended_gcd(long long a, long long b, long long *x, long long *y);
+
+/**
+ * Computes the modular multiplicative inverse of a modulo m, such that:
+ * (a * x) = 1 (mod m).
+ *
+ * Uses the Extended Euclidean Algorithm.
+ *
+ * Properties & Constraints:
+ * - Requires modulus > 1 and gcd(a, modulus) == 1.
+ * - Returns the unique inverse in range [0, modulus - 1].
+ * - Returns -1 if the inverse does not exist (i.e. gcd(a, modulus) != 1 or modulus <= 1).
+ *
+ * @param a Integer whose inverse is sought.
+ * @param modulus Positive integer modulus (> 1).
+ * @return Modular inverse in [0, modulus - 1], or -1 if no inverse exists.
+ */
+MYMATH_API long long mod_inverse(long long a, long long modulus);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* MYMATH_H */
+
 
 
