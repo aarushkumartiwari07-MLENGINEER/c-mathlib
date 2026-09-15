@@ -12,9 +12,17 @@ from .core import (
     extended_gcd,
     mod_inverse,
 )
+from .combinatorics import (
+    combinations,
+    permutations,
+    euler_totient,
+    nCr,
+    nPr,
+)
 from . import numerical
 from . import linear_algebra
 from . import statistics
+from . import combinatorics
 
 __version__ = "0.1.0"
 __all__ = [
@@ -26,10 +34,17 @@ __all__ = [
     "mod_pow",
     "extended_gcd",
     "mod_inverse",
+    "combinations",
+    "permutations",
+    "euler_totient",
+    "nCr",
+    "nPr",
     "numerical",
     "linear_algebra",
     "statistics",
+    "combinatorics",
 ]
+
 
 
 
