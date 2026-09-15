@@ -375,6 +375,10 @@ class Matrix:
             raise ValueError(f"Failed to compute determinant, error code {status}")
         return float(c_det.value)
 
+    def determinant(self) -> float:
+        """Alias for det()."""
+        return self.det()
+
     def solve(self, b: Union[Vector, Sequence[Union[int, float]]]) -> Vector:
         """
         Solve linear system A * x = b for x using Gaussian elimination with partial pivoting in C.
