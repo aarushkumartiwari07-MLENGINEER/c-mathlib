@@ -35,8 +35,40 @@ extern "C" {
  */
 MYMATH_API int is_prime(int n);
 
+/**
+ * Computes the Greatest Common Divisor (GCD) of two integers using the Euclidean algorithm.
+ *
+ * Properties & Edge cases:
+ * - Returns a non-negative value: gcd(a, b) >= 0
+ * - gcd(a, 0) = |a|, gcd(0, b) = |b|
+ * - gcd(0, 0) = 0
+ * - Handles negative integers by taking absolute values.
+ *
+ * @param a First integer (64-bit signed).
+ * @param b Second integer (64-bit signed).
+ * @return Non-negative greatest common divisor.
+ */
+MYMATH_API long long gcd(long long a, long long b);
+
+/**
+ * Computes the Least Common Multiple (LCM) of two integers.
+ * Reuses gcd() to compute (|a| / gcd(a, b)) * |b| to minimize overflow risk.
+ *
+ * Properties & Edge cases:
+ * - Returns a non-negative value: lcm(a, b) >= 0
+ * - lcm(a, 0) = 0, lcm(0, b) = 0
+ * - lcm(0, 0) = 0
+ * - Handles negative integers by taking absolute values.
+ *
+ * @param a First integer (64-bit signed).
+ * @param b Second integer (64-bit signed).
+ * @return Non-negative least common multiple.
+ */
+MYMATH_API long long lcm(long long a, long long b);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* MYMATH_H */
+

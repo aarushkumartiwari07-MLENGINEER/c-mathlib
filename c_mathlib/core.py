@@ -78,6 +78,17 @@ _c_is_prime = _lib.is_prime
 _c_is_prime.argtypes = [ctypes.c_int]
 _c_is_prime.restype = ctypes.c_int
 
+_c_gcd = _lib.gcd
+_c_gcd.argtypes = [ctypes.c_longlong, ctypes.c_longlong]
+_c_gcd.restype = ctypes.c_longlong
+
+_c_lcm = _lib.lcm
+_c_lcm.argtypes = [ctypes.c_longlong, ctypes.c_longlong]
+_c_lcm.restype = ctypes.c_longlong
+
+_INT64_MIN = -9223372036854775808
+_INT64_MAX = 9223372036854775807
+
 
 def is_prime(n: int) -> bool:
     """
@@ -100,6 +111,8 @@ def is_prime(n: int) -> bool:
     ------
     TypeError
         If n is not an integer.
+    OverflowError
+        If n is outside the 32-bit signed integer range.
     """
     # Reject non-integers (note: in Python bool is a subclass of int, so we reject bool explicitly)
     if not isinstance(n, int) or isinstance(n, bool):
@@ -114,3 +127,78 @@ def is_prime(n: int) -> bool:
     # Call the native C function and convert the integer return code (0 or 1) to a Python boolean
     result = _c_is_prime(n)
     return bool(result)
+
+
+def gcd(a: int, b: int) -> int:
+    """
+    Compute the Greatest Common Divisor (GCD) of two integers.
+
+    Uses the Euclidean algorithm executed in native C.
+    The result is always non-negative.
+
+    Parameters
+    ----------
+    a : int
+        First integer.
+    b : int
+        Second integer.
+
+    Returns
+    -------
+    int
+        The non-negative greatest common divisor of a and b.
+
+    Raises
+    ------
+    TypeError
+        If either a or b is not an integer.
+    OverflowError
+        If either a or b exceeds 64-bit signed integer range.
+    """
+    if not isinstance(a, int) or isinstance(a, bool):
+        raise TypeError(f"gcd() arguments must be integers, got {type(a).__name__}")
+    if not isinstance(b, int) or isinstance(b, bool):
+        raise TypeError(f"gcd() arguments must be integers, got {type(b).__name__}")
+
+    if not (_INT64_MIN <= a <= _INT64_MAX) or not (_INT64_MIN <= b <= _INT64_MAX):
+        raise OverflowError("gcd() arguments must fit within 64-bit signed integer range")
+
+    return int(_c_gcd(a, b))
+
+
+def lcm(a: int, b: int) -> int:
+    """
+    Compute the Least Common Multiple (LCM) of two integers.
+
+    Computed in native C using the relationship lcm(a, b) = (|a| / gcd(a, b)) * |b|.
+    The result is always non-negative. If either a or b is 0, the result is 0.
+
+    Parameters
+    ----------
+    a : int
+        First integer.
+    b : int
+        Second integer.
+
+    Returns
+    -------
+    int
+        The non-negative least common multiple of a and b.
+
+    Raises
+    ------
+    TypeError
+        If either a or b is not an integer.
+    OverflowError
+        If either a or b exceeds 64-bit signed integer range.
+    """
+    if not isinstance(a, int) or isinstance(a, bool):
+        raise TypeError(f"lcm() arguments must be integers, got {type(a).__name__}")
+    if not isinstance(b, int) or isinstance(b, bool):
+        raise TypeError(f"lcm() arguments must be integers, got {type(b).__name__}")
+
+    if not (_INT64_MIN <= a <= _INT64_MAX) or not (_INT64_MIN <= b <= _INT64_MAX):
+        raise OverflowError("lcm() arguments must fit within 64-bit signed integer range")
+
+    return int(_c_lcm(a, b))
+

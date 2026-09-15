@@ -32,3 +32,44 @@ int is_prime(int n) {
 
     return 1;
 }
+
+long long gcd(long long a, long long b) {
+    /* Normalize negative numbers to positive */
+    if (a < 0) {
+        a = -a;
+    }
+    if (b < 0) {
+        b = -b;
+    }
+
+    /* Standard Euclidean algorithm: gcd(a, b) = gcd(b, a % b) */
+    while (b != 0) {
+        long long temp = b;
+        b = a % b;
+        a = temp;
+    }
+
+    return a;
+}
+
+long long lcm(long long a, long long b) {
+    if (a == 0 || b == 0) {
+        return 0;
+    }
+
+    long long g = gcd(a, b);
+    if (g == 0) {
+        return 0;
+    }
+
+    if (a < 0) {
+        a = -a;
+    }
+    if (b < 0) {
+        b = -b;
+    }
+
+    /* Divide first to avoid premature integer overflow */
+    return (a / g) * b;
+}
+
