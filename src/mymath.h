@@ -66,9 +66,36 @@ MYMATH_API long long gcd(long long a, long long b);
  */
 MYMATH_API long long lcm(long long a, long long b);
 
+/**
+ * Computes the factorial of a non-negative integer n (n!).
+ *
+ * Domain & Range:
+ * - Valid for 0 <= n <= 20 (fits within standard 64-bit signed integer).
+ * - 0! = 1, 1! = 1.
+ * - Returns -1 if n < 0 (negative input) or n > 20 (overflow).
+ *
+ * @param n Non-negative integer.
+ * @return Factorial of n, or -1 on domain/range error.
+ */
+MYMATH_API long long factorial(int n);
+
+/**
+ * Computes the n-th Fibonacci number (0-indexed: F_0 = 0, F_1 = 1, F_2 = 1, ...).
+ *
+ * Domain & Range:
+ * - Valid for 0 <= n <= 92 (fits within standard 64-bit signed integer).
+ * - F_0 = 0, F_1 = 1, F_2 = 1, F_10 = 55.
+ * - Returns -1 if n < 0 (negative input) or n > 92 (overflow).
+ *
+ * @param n Non-negative sequence index.
+ * @return n-th Fibonacci number, or -1 on domain/range error.
+ */
+MYMATH_API long long fibonacci(int n);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* MYMATH_H */
+
 

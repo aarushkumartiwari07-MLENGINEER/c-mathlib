@@ -73,3 +73,43 @@ long long lcm(long long a, long long b) {
     return (a / g) * b;
 }
 
+long long factorial(int n) {
+    /* Factorial is undefined for negative integers; 20! is max signed 64-bit value */
+    if (n < 0 || n > 20) {
+        return -1;
+    }
+
+    long long result = 1;
+    for (int i = 2; i <= n; i++) {
+        result *= i;
+    }
+
+    return result;
+}
+
+long long fibonacci(int n) {
+    /* 0-indexed Fibonacci sequence: F_0 = 0, F_1 = 1; F_92 is max signed 64-bit value */
+    if (n < 0 || n > 92) {
+        return -1;
+    }
+
+    if (n == 0) {
+        return 0;
+    }
+    if (n == 1) {
+        return 1;
+    }
+
+    long long prev = 0;
+    long long curr = 1;
+
+    for (int i = 2; i <= n; i++) {
+        long long next = prev + curr;
+        prev = curr;
+        curr = next;
+    }
+
+    return curr;
+}
+
+

@@ -86,8 +86,17 @@ _c_lcm = _lib.lcm
 _c_lcm.argtypes = [ctypes.c_longlong, ctypes.c_longlong]
 _c_lcm.restype = ctypes.c_longlong
 
+_c_factorial = _lib.factorial
+_c_factorial.argtypes = [ctypes.c_int]
+_c_factorial.restype = ctypes.c_longlong
+
+_c_fibonacci = _lib.fibonacci
+_c_fibonacci.argtypes = [ctypes.c_int]
+_c_fibonacci.restype = ctypes.c_longlong
+
 _INT64_MIN = -9223372036854775808
 _INT64_MAX = 9223372036854775807
+
 
 
 def is_prime(n: int) -> bool:
@@ -201,4 +210,82 @@ def lcm(a: int, b: int) -> int:
         raise OverflowError("lcm() arguments must fit within 64-bit signed integer range")
 
     return int(_c_lcm(a, b))
+
+
+def factorial(n: int) -> int:
+    """
+    Compute the factorial of a non-negative integer n (n!).
+
+    Computed in native C. Supports values up to n = 20 (the maximum value
+    representable in a 64-bit signed integer: 20! = 2,432,902,008,176,640,000).
+
+    Parameters
+    ----------
+    n : int
+        A non-negative integer (0 <= n <= 20).
+
+    Returns
+    -------
+    int
+        The factorial of n (0! = 1).
+
+    Raises
+    ------
+    TypeError
+        If n is not an integer.
+    ValueError
+        If n is negative.
+    OverflowError
+        If n > 20 (exceeds 64-bit signed integer precision).
+    """
+    if not isinstance(n, int) or isinstance(n, bool):
+        raise TypeError(f"factorial() argument must be an integer, got {type(n).__name__}")
+
+    if n < 0:
+        raise ValueError("factorial() not defined for negative integers")
+
+    if n > 20:
+        raise OverflowError("factorial() input exceeds 64-bit integer range (n <= 20)")
+
+    return int(_c_factorial(n))
+
+
+def fibonacci(n: int) -> int:
+    """
+    Compute the n-th Fibonacci number in the standard 0-indexed Fibonacci sequence.
+
+    Computed iteratively in native C with O(n) time and O(1) space.
+    Sequence convention: F(0) = 0, F(1) = 1, F(2) = 1, F(3) = 2, ..., F(10) = 55.
+    Supports indices up to n = 92 (F(92) = 7,540,113,804,746,346,429).
+
+    Parameters
+    ----------
+    n : int
+        A non-negative sequence index (0 <= n <= 92).
+
+    Returns
+    -------
+    int
+        The n-th Fibonacci number.
+
+    Raises
+    ------
+    TypeError
+        If n is not an integer.
+    ValueError
+        If n is negative.
+    OverflowError
+        If n > 92 (exceeds 64-bit signed integer precision).
+    """
+    if not isinstance(n, int) or isinstance(n, bool):
+        raise TypeError(f"fibonacci() argument must be an integer, got {type(n).__name__}")
+
+    if n < 0:
+        raise ValueError("fibonacci() not defined for negative index")
+
+    if n > 92:
+        raise OverflowError("fibonacci() index exceeds 64-bit integer range (n <= 92)")
+
+    return int(_c_fibonacci(n))
+
 
