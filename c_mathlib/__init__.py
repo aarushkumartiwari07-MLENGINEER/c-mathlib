@@ -14,6 +14,7 @@ from .core import (
 )
 from . import numerical
 from . import linear_algebra
+from . import statistics
 
 __version__ = "0.1.0"
 __all__ = [
@@ -27,7 +28,9 @@ __all__ = [
     "mod_inverse",
     "numerical",
     "linear_algebra",
+    "statistics",
 ]
+
 
 
 
