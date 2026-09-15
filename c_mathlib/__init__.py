@@ -13,6 +13,7 @@ from .core import (
     mod_inverse,
 )
 from . import numerical
+from . import linear_algebra
 
 __version__ = "0.1.0"
 __all__ = [
@@ -25,7 +26,9 @@ __all__ = [
     "extended_gcd",
     "mod_inverse",
     "numerical",
+    "linear_algebra",
 ]
+
 
 
 
