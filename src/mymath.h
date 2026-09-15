@@ -136,11 +136,111 @@ MYMATH_API long long extended_gcd(long long a, long long b, long long *x, long l
  */
 MYMATH_API long long mod_inverse(long long a, long long modulus);
 
+/*
+ * Built-in mathematical function IDs for numerical routines.
+ */
+enum MathFuncId {
+    FUNC_IDENTITY = 0,    /* f(x) = x */
+    FUNC_SQUARE = 1,      /* f(x) = x^2 */
+    FUNC_CUBE = 2,        /* f(x) = x^3 */
+    FUNC_QUADRATIC = 3,   /* f(x) = x^2 - 4 */
+    FUNC_CUBIC_TEST = 4,  /* f(x) = x^3 - x - 2 */
+    FUNC_SIN = 5,         /* f(x) = sin(x) */
+    FUNC_COS = 6,         /* f(x) = cos(x) */
+    FUNC_EXP = 7,         /* f(x) = exp(x) */
+    FUNC_LOG = 8,         /* f(x) = ln(x) */
+    FUNC_RECIPROCAL = 9   /* f(x) = 1/x */
+};
+
+/**
+ * Evaluates a built-in mathematical function at point x.
+ */
+MYMATH_API double eval_math_func(int func_id, double x);
+
+/**
+ * Evaluates a polynomial P(x) = c_0 + c_1*x + ... + c_n*x^n at point x using Horner's method.
+ *
+ * @param coeffs Array of coefficients in ascending degree order: [c_0, c_1, ..., c_n].
+ * @param num_coeffs Number of elements in coeffs (degree + 1).
+ * @param x Evaluation point.
+ * @return Evaluated value P(x).
+ */
+MYMATH_API double eval_polynomial(const double *coeffs, int num_coeffs, double x);
+
+/**
+ * Finds a root of f(x) = 0 on [a, b] using the bisection method.
+ *
+ * Status return codes:
+ *  0 = success (root written to *root)
+ * -1 = invalid bracket (f(a) and f(b) have same sign)
+ * -2 = failed to converge within max_iter
+ * -3 = invalid parameters (tol <= 0, max_iter <= 0, or unknown func_id)
+ *
+ * @param func_id Identifier of the built-in function.
+ * @param a Left interval bracket.
+ * @param b Right interval bracket.
+ * @param tol Convergence tolerance.
+ * @param max_iter Maximum allowed iterations.
+ * @param root Output pointer to store the computed root.
+ * @return Status code (0 on success, negative on error).
+ */
+MYMATH_API int bisection_method(int func_id, double a, double b, double tol, int max_iter, double *root);
+
+/**
+ * Finds a root of a polynomial P(x) = 0 on [a, b] using the bisection method.
+ */
+MYMATH_API int bisection_poly(const double *coeffs, int num_coeffs, double a, double b, double tol, int max_iter, double *root);
+
+/**
+ * Approximates definite integral of f(x) from a to b using composite Simpson's 1/3 rule.
+ *
+ * Status return codes:
+ *  0 = success (result written to *result)
+ * -1 = invalid subdivision count (n must be even and >= 2)
+ * -2 = invalid function ID
+ *
+ * @param func_id Identifier of the built-in function.
+ * @param a Lower limit of integration.
+ * @param b Upper limit of integration.
+ * @param n Number of intervals (must be positive and even).
+ * @param result Output pointer for computed integral approximation.
+ * @return Status code (0 on success, negative on error).
+ */
+MYMATH_API int simpson_rule(int func_id, double a, double b, int n, double *result);
+
+/**
+ * Approximates definite integral of a polynomial from a to b using composite Simpson's rule.
+ */
+MYMATH_API int simpson_poly(const double *coeffs, int num_coeffs, double a, double b, int n, double *result);
+
+/**
+ * Computes numerical derivative f'(x) using central difference approximation:
+ * f'(x) ~ [f(x + h) - f(x - h)] / (2h).
+ *
+ * Status return codes:
+ *  0 = success (result written to *result)
+ * -1 = invalid step size h (must be > 0)
+ * -2 = invalid function ID
+ *
+ * @param func_id Identifier of the built-in function.
+ * @param x Point at which to evaluate derivative.
+ * @param h Finite difference step size.
+ * @param result Output pointer for computed derivative.
+ * @return Status code (0 on success, negative on error).
+ */
+MYMATH_API int numerical_derivative(int func_id, double x, double h, double *result);
+
+/**
+ * Computes numerical derivative of a polynomial using central difference.
+ */
+MYMATH_API int numerical_derivative_poly(const double *coeffs, int num_coeffs, double x, double h, double *result);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* MYMATH_H */
+
 
 
 

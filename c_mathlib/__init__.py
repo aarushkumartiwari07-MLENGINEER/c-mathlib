@@ -12,6 +12,7 @@ from .core import (
     extended_gcd,
     mod_inverse,
 )
+from . import numerical
 
 __version__ = "0.1.0"
 __all__ = [
@@ -23,7 +24,9 @@ __all__ = [
     "mod_pow",
     "extended_gcd",
     "mod_inverse",
+    "numerical",
 ]
+
 
 
 
