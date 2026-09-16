@@ -552,6 +552,93 @@ int secant_poly(const double *coeffs, int num_coeffs, double x0, double x1, doub
     return -2;
 }
 
+static double eval_ode_func(int ode_id, double t, double y) {
+    switch (ode_id) {
+        case ODE_EXP_DECAY:       return -y;
+        case ODE_LOGISTIC:        return y * (1.0 - y);
+        case ODE_LINEAR:          return t + y;
+        case ODE_SINE:            return cos(t);
+        case ODE_HARMONIC_ACCEL:  return -t * y;
+        default:                  return 0.0;
+    }
+}
+
+int rk4_solve(
+    int ode_id,
+    double y0,
+    double t0,
+    double t1,
+    int steps,
+    double *t_out,
+    double *y_out
+) {
+    if (steps < 1 || t_out == (void*)0 || y_out == (void*)0) {
+        return -1;
+    }
+    if (ode_id < 0 || ode_id > 4) {
+        return -2;
+    }
+
+    double h = (t1 - t0) / (double)steps;
+    double t = t0;
+    double y = y0;
+
+    t_out[0] = t;
+    y_out[0] = y;
+
+    for (int i = 0; i < steps; i++) {
+        double k1 = eval_ode_func(ode_id, t, y);
+        double k2 = eval_ode_func(ode_id, t + 0.5 * h, y + 0.5 * h * k1);
+        double k3 = eval_ode_func(ode_id, t + 0.5 * h, y + 0.5 * h * k2);
+        double k4 = eval_ode_func(ode_id, t + h, y + h * k3);
+
+        y += (h / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+        t = t0 + (i + 1) * h;
+
+        t_out[i + 1] = t;
+        y_out[i + 1] = y;
+    }
+
+    return 0;
+}
+
+int rk4_poly(
+    const double *coeffs,
+    int num_coeffs,
+    double y0,
+    double t0,
+    double t1,
+    int steps,
+    double *t_out,
+    double *y_out
+) {
+    if (steps < 1 || t_out == (void*)0 || y_out == (void*)0 || coeffs == (void*)0 || num_coeffs <= 0) {
+        return -1;
+    }
+
+    double h = (t1 - t0) / (double)steps;
+    double t = t0;
+    double y = y0;
+
+    t_out[0] = t;
+    y_out[0] = y;
+
+    for (int i = 0; i < steps; i++) {
+        double k1 = eval_polynomial(coeffs, num_coeffs, t);
+        double k2 = eval_polynomial(coeffs, num_coeffs, t + 0.5 * h);
+        double k3 = k2;
+        double k4 = eval_polynomial(coeffs, num_coeffs, t + h);
+
+        y += (h / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+        t = t0 + (i + 1) * h;
+
+        t_out[i + 1] = t;
+        y_out[i + 1] = y;
+    }
+
+    return 0;
+}
+
 
 
 

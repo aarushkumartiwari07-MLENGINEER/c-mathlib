@@ -131,10 +131,53 @@ _c_secant_poly.argtypes = [
 ]
 _c_secant_poly.restype = ctypes.c_int
 
+_c_rk4_solve = _lib.rk4_solve
+_c_rk4_solve.argtypes = [
+    ctypes.c_int,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_int,
+    _c_double_p,
+    _c_double_p,
+]
+_c_rk4_solve.restype = ctypes.c_int
+
+_c_rk4_poly = _lib.rk4_poly
+_c_rk4_poly.argtypes = [
+    _c_double_p,
+    ctypes.c_int,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_int,
+    _c_double_p,
+    _c_double_p,
+]
+_c_rk4_poly.restype = ctypes.c_int
+
 
 # ==============================================================================
-# Built-in Function ID Mappings
+# Built-in Function & ODE ID Mappings
 # ==============================================================================
+
+_ODE_NAME_TO_ID = {
+    "exp_decay": 0,
+    "-y": 0,
+    "decay": 0,
+    "logistic": 1,
+    "y*(1-y)": 1,
+    "y(1-y)": 1,
+    "linear": 2,
+    "t+y": 2,
+    "t + y": 2,
+    "sine": 3,
+    "cos(t)": 3,
+    "cos": 3,
+    "harmonic": 4,
+    "-t*y": 4,
+    "-t * y": 4,
+}
 
 _FUNC_NAME_TO_ID = {
     "x": 0,
@@ -629,12 +672,118 @@ def secant(
         raise ValueError(f"secant() failed with status code {status}")
 
 
+def _resolve_ode_target(
+    func: Union[str, Sequence[Union[int, float]], Polynomial]
+) -> Tuple[bool, Union[int, List[float]]]:
+    if isinstance(func, Polynomial):
+        return True, func.coeffs
+    if isinstance(func, str):
+        norm = func.strip().lower()
+        if norm in _ODE_NAME_TO_ID:
+            return False, _ODE_NAME_TO_ID[norm]
+        raise ValueError(f"Unknown built-in ODE model '{func}'. Available: {list(_ODE_NAME_TO_ID.keys())}")
+    if hasattr(func, "__iter__") and not isinstance(func, (str, bytes)):
+        p = Polynomial(func)
+        return True, p.coeffs
+    raise TypeError(f"Invalid ODE function type: {type(func).__name__}")
+
+
+class ODEResult:
+    """
+    Container for numerical ODE solution trajectory.
+    """
+    def __init__(self, t: List[float], y: List[float]):
+        self.t = list(t)
+        self.y = list(y)
+
+    @property
+    def y_final(self) -> float:
+        """Final computed state value y(t_end)."""
+        return self.y[-1]
+
+    def __len__(self) -> int:
+        return len(self.t)
+
+    def __repr__(self) -> str:
+        return f"ODEResult(t_span=[{self.t[0]:g}, {self.t[-1]:g}], steps={len(self.t)-1}, y_final={self.y_final:.6g})"
+
+
+def rk4(
+    func: Union[str, Sequence[Union[int, float]], Polynomial],
+    y0: Union[int, float],
+    t_span: Tuple[Union[int, float], Union[int, float]] = (0.0, 1.0),
+    steps: int = 100,
+) -> ODEResult:
+    """
+    Solve initial-value ordinary differential equation dy/dt = f(t, y), y(t0) = y0
+    using the explicit 4th-Order Runge-Kutta (RK4) method in native C.
+
+    Achieves global truncation error O(h^4) per step.
+
+    Parameters
+    ----------
+    func : str or Sequence[float] or Polynomial
+        The ODE model identifier (e.g. 'exp_decay', 'logistic', 'linear') or polynomial P(t).
+    y0 : float or int
+        Initial condition y(t0).
+    t_span : tuple of (float, float), default=(0.0, 1.0)
+        Integration interval (t0, t1).
+    steps : int, default=100
+        Number of integration steps (must be >= 1).
+
+    Returns
+    -------
+    ODEResult
+        Result containing time array .t, solution trajectory .y, and .y_final.
+
+    Raises
+    ------
+    TypeError
+        If parameters have invalid types.
+    ValueError
+        If steps < 1 or invalid t_span.
+    """
+    if isinstance(y0, bool) or not isinstance(y0, (int, float)):
+        raise TypeError(f"rk4() initial condition y0 must be numeric, got {type(y0).__name__}")
+    if not isinstance(t_span, (tuple, list)) or len(t_span) != 2:
+        raise TypeError(f"rk4() t_span must be a 2-tuple (t0, t1), got {t_span}")
+    if isinstance(steps, bool) or not isinstance(steps, int):
+        raise TypeError(f"rk4() steps must be an integer, got {type(steps).__name__}")
+    if steps < 1:
+        raise ValueError(f"rk4() steps must be >= 1, got {steps}")
+
+    t0, t1 = float(t_span[0]), float(t_span[1])
+    is_poly, payload = _resolve_ode_target(func)
+
+    c_y0 = float(y0)
+    c_t0 = t0
+    c_t1 = t1
+    c_steps = int(steps)
+    total_pts = c_steps + 1
+
+    t_out = (ctypes.c_double * total_pts)()
+    y_out = (ctypes.c_double * total_pts)()
+
+    if is_poly:
+        coeffs_array = (ctypes.c_double * len(payload))(*payload)
+        status = _c_rk4_poly(coeffs_array, len(payload), c_y0, c_t0, c_t1, c_steps, t_out, y_out)
+    else:
+        status = _c_rk4_solve(int(payload), c_y0, c_t0, c_t1, c_steps, t_out, y_out)
+
+    if status < 0:
+        raise ValueError(f"rk4() solver failed with error code {status}")
+
+    return ODEResult(list(t_out), list(y_out))
+
+
 __all__ = [
     "Polynomial",
+    "ODEResult",
     "evaluate",
     "bisection",
     "simpson",
     "derivative",
     "newton",
     "secant",
+    "rk4",
 ]

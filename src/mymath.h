@@ -270,6 +270,56 @@ MYMATH_API int secant_method(int func_id, double x0, double x1, double tol, int 
  */
 MYMATH_API int secant_poly(const double *coeffs, int num_coeffs, double x0, double x1, double tol, int max_iter, double *root);
 
+/*
+ * Built-in ODE system right-hand side IDs for dy/dt = f(t, y)
+ */
+enum ODEFuncId {
+    ODE_EXP_DECAY = 0,       /* f(t, y) = -y */
+    ODE_LOGISTIC = 1,        /* f(t, y) = y * (1 - y) */
+    ODE_LINEAR = 2,          /* f(t, y) = t + y */
+    ODE_SINE = 3,            /* f(t, y) = cos(t) */
+    ODE_HARMONIC_ACCEL = 4   /* f(t, y) = -t * y */
+};
+
+/**
+ * Solves initial-value ordinary differential equation dy/dt = f(t, y), y(t0) = y0
+ * on [t0, t1] using the explicit Runge-Kutta 4th Order (RK4) method in native C.
+ *
+ * Global truncation error is O(h^4).
+ *
+ * @param ode_id Built-in ODE identifier.
+ * @param y0 Initial condition y(t0).
+ * @param t0 Initial time.
+ * @param t1 Final time.
+ * @param steps Number of integration steps (must be >= 1).
+ * @param t_out Output array for time grid (size steps + 1).
+ * @param y_out Output array for computed solution y(t) (size steps + 1).
+ * @return 0 on success, -1 on invalid steps/pointers, -2 on unknown ode_id.
+ */
+MYMATH_API int rk4_solve(
+    int ode_id,
+    double y0,
+    double t0,
+    double t1,
+    int steps,
+    double *t_out,
+    double *y_out
+);
+
+/**
+ * Solves initial-value ODE dy/dt = P(t), y(t0) = y0 for polynomial P(t) using RK4 in C.
+ */
+MYMATH_API int rk4_poly(
+    const double *coeffs,
+    int num_coeffs,
+    double y0,
+    double t0,
+    double t1,
+    int steps,
+    double *t_out,
+    double *y_out
+);
+
 #ifdef __cplusplus
 }
 #endif
