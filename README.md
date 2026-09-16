@@ -58,7 +58,7 @@ A high-performance, multi-module mathematical and numerical computing library wh
 | Class / Function | Mathematical Operation | Complexity | Description |
 | :--- | :--- | :--- | :--- |
 | `Vector` | $n$-dimensional vector algebra | $O(n)$ | Supports `+`, `-`, `*` (scalar), `@` (dot), `.norm(p)`, `.cross()`, `.cosine_similarity()` |
-| `Matrix` | 2D matrix stored in row-major order | $O(mn)$ | Supports `+`, `-`, `*` (scalar), `@` (GEMM & matrix-vector), `.T`, `.trace()`, `.det()`, `.solve()` |
+| `Matrix` | 2D matrix stored in row-major order | $O(mn)$ | Supports `+`, `-`, `*` (scalar), `@` (GEMM & matrix-vector), `.T`, `.trace()`, `.det()`, `.solve()`, `.lu()`, `.qr()`, `.cholesky()`, `.inv()` |
 | `dot(u, v)` | Inner product $\mathbf{u} \cdot \mathbf{v}$ | $O(n)$ | Native C vector accumulation |
 | `norm(v, p)` | Vector $L_1$, $L_2$, or $L_\infty$ norm | $O(n)$ | $p=1, 2, \infty$ (Manhattan, Euclidean, Chebyshev) |
 | `cross(u, v)` | 3D vector cross product $\mathbf{u} \times \mathbf{v}$ | $O(1)$ | Orthogonal vector in $\mathbb{R}^3$ |
@@ -67,6 +67,11 @@ A high-performance, multi-module mathematical and numerical computing library wh
 | `transpose(A)` | Matrix transpose $A^T$ | $O(mn)$ | Transposes rows and columns in C |
 | `determinant(A)` / `A.det()` | Determinant $\det(A)$ | $O(n^3)$ | Gaussian elimination with partial pivoting in C |
 | `solve_linear(A, b)` / `A.solve(b)`| Solve linear system $A \mathbf{x} = \mathbf{b}$ | $O(n^3)$ | LU-style forward elimination & back-substitution in C |
+| `lu(A)` / `A.lu()` | LU Decomposition $P A = L U$ | $O(n^3)$ | Partial-pivoting factorization into permutation $P$, unit lower $L$, upper $U$ |
+| `qr(A)` / `A.qr()` | QR Decomposition $A = Q R$ | $O(mn^2)$ | Modified Gram-Schmidt orthogonalization ($Q^T Q = I$) |
+| `cholesky(A)` / `A.cholesky()` | Cholesky Decomposition $A = L L^T$ | $O(n^3/3)$ | Factorization for symmetric positive-definite (SPD) matrices |
+| `inv(A)` / `A.inv()` | Matrix Multiplicative Inverse $A^{-1}$ | $O(n^3)$ | Computes inverse via LU column solves against $I_n$ |
+| `solve_least_squares(A, b)` | Linear Least Squares $\min \|A\mathbf{x} - \mathbf{b}\|_2$ | $O(mn^2)$ | Overdetermined solver ($m \ge n$) using native QR decomposition |
 
 ### 6. Statistics & Regression (`c_mathlib.statistics`)
 
@@ -142,12 +147,14 @@ c-mathlib/
 │   ├── test_modular.py               # Tests for Modular arithmetic and Extended GCD (14 tests)
 │   ├── test_numerical.py             # Tests for Root finding, Simpson, derivative (17 tests)
 │   ├── test_linear_algebra.py        # Tests for Vector, Matrix, GEMM, solver (12 tests)
+│   ├── test_decompositions.py         # Tests for LU, QR, Cholesky, Inversion, Least Squares (13 tests)
 │   ├── test_statistics.py            # Tests for mean, variance, OLS regression (7 tests)
 │   └── test_combinatorics.py         # Tests for nCr, nPr, Euler's totient (8 tests)
 ├── examples/
 │   ├── basic.py                      # Fundamental arithmetic & number theory demo
 │   ├── numerical_demo.py             # Numerical calculus and root finding demo
 │   ├── linear_algebra_demo.py        # Vector/matrix operations, determinants, and linear solver demo
+│   ├── decompositions_demo.py        # LU, QR least squares, Cholesky, and matrix inversion demo
 │   ├── statistics_demo.py            # Descriptive statistics, correlation, and OLS regression demo
 │   └── combinatorics_demo.py         # Combinations, permutations, and totient demo
 ├── pyproject.toml                    # PEP 517/621 package metadata & configuration
@@ -196,12 +203,21 @@ python -m pip install -e .
 
 ## Usage Examples
 
-### 1. Linear Algebra (Vectors, Matrices, Linear Systems)
+### 1. Linear Algebra (Vectors, Matrices, Decompositions, Solvers)
 
 ```python
-from c_mathlib.linear_algebra import Vector, Matrix, solve_linear, cosine_similarity
+from c_mathlib.linear_algebra import (
+    Vector,
+    Matrix,
+    lu,
+    qr,
+    cholesky,
+    solve_linear,
+    solve_least_squares,
+    cosine_similarity,
+)
 
-# Vector geometry
+# Vector geometry & Norms
 u = Vector([1.0, 2.0, 3.0])
 v = Vector([4.0, 5.0, 6.0])
 
@@ -210,15 +226,30 @@ print(u @ v)                         # 32.0 (dot product)
 print(u.norm(p=2))                   # 3.741657 (L2 norm)
 print(cosine_similarity(u, v))       # 0.974632
 
-# Matrix GEMM Multiplication & Determinants
+# Matrix Multiplications, Inverses, & Determinants
 A = Matrix([[1.0, 2.0], [3.0, 4.0]])
 B = Matrix([[2.0, 0.0], [1.0, 2.0]])
 print(A @ B)                         # Matrix([[4, 4], [10, 8]])
 print(A.det())                       # -2.0
+print(A.inv())                       # Matrix([[-2, 1], [1.5, -0.5]])
+
+# LU Factorization with Partial Pivoting: P @ A == L @ U
+P, L, U = A.lu()
+
+# QR Decomposition & Linear Least Squares Fitting (min ||A*x - b||_2)
+# Fit line y = c + m*x to data points
+design_A = Matrix([[1.0, 1.0], [1.0, 2.0], [1.0, 3.0], [1.0, 4.0]])
+y_data = Vector([2.1, 3.9, 6.2, 8.0])
+Q, R = design_A.qr()
+params = solve_least_squares(design_A, y_data)
+print(f"Fitted: y = {params[0]:.2f} + {params[1]:.2f}*x")  # y = 0.05 + 2.00*x
+
+# Cholesky Factorization for Symmetric Positive-Definite (SPD) Matrices: A == L @ L.T
+A_spd = Matrix([[4.0, 2.0], [2.0, 5.0]])
+L_spd = A_spd.cholesky()
+print("Cholesky L:", L_spd)          # Matrix([[2, 0], [1, 2]])
 
 # Solve System of Linear Equations: A * x = b
-# 2x + y = 5
-# x + 3y = 5
 sys_A = Matrix([[2.0, 1.0], [1.0, 3.0]])
 sys_b = Vector([5.0, 5.0])
 x_sol = solve_linear(sys_A, sys_b)
@@ -291,7 +322,7 @@ print(gcd(48, 18), lcm(12, 18))      # 6, 36
 # Modular Exponentiation (O(log exp) in C)
 print(mod_pow(2, 10, 1000))          # 24
 
-# Bézout Identity & Modular Inversion
+# Bezout Identity & Modular Inversion
 g, x, y = extended_gcd(30, 12)       # gcd=6, x=1, y=-2 -> 30*(1) + 12*(-2) = 6
 print(mod_inverse(3, 11))            # 4 (since 3 * 4 == 12 == 1 mod 11)
 ```
@@ -306,6 +337,7 @@ Run the interactive demonstration scripts located in `examples/`:
 python examples/basic.py
 python examples/numerical_demo.py
 python examples/linear_algebra_demo.py
+python examples/decompositions_demo.py
 python examples/statistics_demo.py
 python examples/combinatorics_demo.py
 ```
@@ -314,7 +346,7 @@ python examples/combinatorics_demo.py
 
 ## Running Tests
 
-Run the complete test suite (98 unit tests covering all C routines and edge cases) using `unittest`:
+Run the complete test suite (111 unit tests covering all C routines and edge cases) using `unittest`:
 
 ```powershell
 python -m unittest discover -s tests -v

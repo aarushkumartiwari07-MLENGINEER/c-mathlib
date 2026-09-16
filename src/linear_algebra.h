@@ -124,6 +124,134 @@ MYMATH_API int matrix_determinant(const double *A, int n, double *det);
  */
 MYMATH_API int solve_linear_system(const double *A, const double *b, int n, double *x);
 
+/* ========================================================================== */
+/* Matrix Decompositions & Advanced Solvers                                   */
+/* ========================================================================== */
+
+/**
+ * Computes the LU decomposition with partial pivoting: P * A = L * U.
+ *
+ * @param A Pointer to square matrix (n x n, row-major).
+ * @param n Dimension of matrix.
+ * @param L Output pointer for unit lower triangular matrix (n x n).
+ * @param U Output pointer for upper triangular matrix (n x n).
+ * @param P Output pointer for pivot permutation vector (dimension n).
+ * @return 0 on success, -1 if matrix is singular, -2 on invalid input.
+ */
+MYMATH_API int matrix_lu(
+    const double *A,
+    int n,
+    double *L,
+    double *U,
+    int *P
+);
+
+/**
+ * Solves A * x = b given precomputed LU factorization (P * A = L * U).
+ * Uses forward substitution on L * y = P * b, then back-substitution on U * x = y.
+ *
+ * @param L Pointer to unit lower triangular matrix (n x n).
+ * @param U Pointer to upper triangular matrix (n x n).
+ * @param P Pointer to pivot permutation vector (dimension n).
+ * @param b Pointer to right-hand side vector (dimension n).
+ * @param n Dimension of linear system.
+ * @param x Output pointer for solution vector (dimension n).
+ * @return 0 on success, -1 on singular U (zero diagonal), -2 on invalid input.
+ */
+MYMATH_API int lu_solve(
+    const double *L,
+    const double *U,
+    const int *P,
+    const double *b,
+    int n,
+    double *x
+);
+
+/**
+ * Computes QR decomposition of an m x n matrix (m >= n) using Modified Gram-Schmidt:
+ * A = Q * R, where Q is m x n (orthogonal columns) and R is n x n (upper triangular).
+ *
+ * @param A Pointer to m x n matrix.
+ * @param m Number of rows (m >= n).
+ * @param n Number of columns.
+ * @param Q Output pointer for m x n matrix with orthogonal columns.
+ * @param R Output pointer for n x n upper triangular matrix.
+ * @return 0 on success, -1 if columns are linearly dependent, -2 on invalid input.
+ */
+MYMATH_API int matrix_qr(
+    const double *A,
+    int m,
+    int n,
+    double *Q,
+    double *R
+);
+
+/**
+ * Solves the linear least squares problem min ||A * x - b||_2 given QR decomposition A = Q * R.
+ * Computes x = R^(-1) * (Q^T * b) via back-substitution.
+ *
+ * @param Q Pointer to m x n orthogonal matrix.
+ * @param R Pointer to n x n upper triangular matrix.
+ * @param b Pointer to right-hand side vector (dimension m).
+ * @param m Number of rows.
+ * @param n Number of columns (m >= n).
+ * @param x Output pointer for solution vector (dimension n).
+ * @return 0 on success, -1 if R is singular, -2 on invalid input.
+ */
+MYMATH_API int qr_solve(
+    const double *Q,
+    const double *R,
+    const double *b,
+    int m,
+    int n,
+    double *x
+);
+
+/**
+ * Computes Cholesky decomposition of a symmetric positive-definite (SPD) matrix:
+ * A = L * L^T, where L is lower triangular with positive diagonal elements.
+ *
+ * @param A Pointer to n x n symmetric matrix.
+ * @param n Dimension of matrix.
+ * @param L Output pointer for n x n lower triangular matrix.
+ * @return 0 on success, -1 if matrix is not positive-definite, -2 on invalid input.
+ */
+MYMATH_API int matrix_cholesky(
+    const double *A,
+    int n,
+    double *L
+);
+
+/**
+ * Solves A * x = b for a symmetric positive-definite matrix given its Cholesky factor L (A = L * L^T).
+ *
+ * @param L Pointer to lower triangular matrix (n x n).
+ * @param b Pointer to right-hand side vector (dimension n).
+ * @param n Dimension of linear system.
+ * @param x Output pointer for solution vector (dimension n).
+ * @return 0 on success, -1 if L is singular, -2 on invalid input.
+ */
+MYMATH_API int cholesky_solve(
+    const double *L,
+    const double *b,
+    int n,
+    double *x
+);
+
+/**
+ * Computes the inverse of an n x n square matrix A using LU decomposition.
+ *
+ * @param A Pointer to n x n square matrix.
+ * @param n Dimension of matrix.
+ * @param inv Output pointer for n x n inverse matrix.
+ * @return 0 on success, -1 if matrix is singular, -2 on invalid input.
+ */
+MYMATH_API int matrix_inverse(
+    const double *A,
+    int n,
+    double *inv
+);
+
 #ifdef __cplusplus
 }
 #endif

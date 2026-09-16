@@ -84,6 +84,36 @@ _c_solve_linear_system.argtypes = [
 ]
 _c_solve_linear_system.restype = ctypes.c_int
 
+_c_int_p = ctypes.POINTER(ctypes.c_int)
+
+_c_matrix_lu = _lib.matrix_lu
+_c_matrix_lu.argtypes = [_c_double_p, ctypes.c_int, _c_double_p, _c_double_p, _c_int_p]
+_c_matrix_lu.restype = ctypes.c_int
+
+_c_lu_solve = _lib.lu_solve
+_c_lu_solve.argtypes = [_c_double_p, _c_double_p, _c_int_p, _c_double_p, ctypes.c_int, _c_double_p]
+_c_lu_solve.restype = ctypes.c_int
+
+_c_matrix_qr = _lib.matrix_qr
+_c_matrix_qr.argtypes = [_c_double_p, ctypes.c_int, ctypes.c_int, _c_double_p, _c_double_p]
+_c_matrix_qr.restype = ctypes.c_int
+
+_c_qr_solve = _lib.qr_solve
+_c_qr_solve.argtypes = [_c_double_p, _c_double_p, _c_double_p, ctypes.c_int, ctypes.c_int, _c_double_p]
+_c_qr_solve.restype = ctypes.c_int
+
+_c_matrix_cholesky = _lib.matrix_cholesky
+_c_matrix_cholesky.argtypes = [_c_double_p, ctypes.c_int, _c_double_p]
+_c_matrix_cholesky.restype = ctypes.c_int
+
+_c_cholesky_solve = _lib.cholesky_solve
+_c_cholesky_solve.argtypes = [_c_double_p, _c_double_p, ctypes.c_int, _c_double_p]
+_c_cholesky_solve.restype = ctypes.c_int
+
+_c_matrix_inverse = _lib.matrix_inverse
+_c_matrix_inverse.argtypes = [_c_double_p, ctypes.c_int, _c_double_p]
+_c_matrix_inverse.restype = ctypes.c_int
+
 
 # ==============================================================================
 # Vector Class
@@ -404,6 +434,115 @@ class Matrix:
 
         return Vector(list(x_arr))
 
+    def lu(self) -> Tuple["Matrix", "Matrix", "Matrix"]:
+        """
+        Compute LU decomposition with partial pivoting: P @ A = L @ U.
+        
+        Returns
+        -------
+        Tuple[Matrix, Matrix, Matrix]
+            (P, L, U) where P is the permutation matrix, L is unit lower triangular,
+            and U is upper triangular.
+        """
+        if not self.is_square:
+            raise ValueError(f"LU decomposition requires a square matrix, got shape {self.shape}")
+        
+        n = self._rows
+        A_arr = self._to_c_array()
+        L_arr = (ctypes.c_double * (n * n))()
+        U_arr = (ctypes.c_double * (n * n))()
+        P_arr = (ctypes.c_int * n)()
+
+        status = _c_matrix_lu(A_arr, n, L_arr, U_arr, P_arr)
+        if status == -1:
+            raise ValueError("Matrix is singular; LU decomposition cannot be completed")
+        elif status < 0:
+            raise ValueError(f"LU decomposition failed with error code {status}")
+
+        L_data = [list(L_arr[i * n : (i + 1) * n]) for i in range(n)]
+        U_data = [list(U_arr[i * n : (i + 1) * n]) for i in range(n)]
+        P_data = [[1.0 if j == P_arr[i] else 0.0 for j in range(n)] for i in range(n)]
+
+        return (Matrix(P_data), Matrix(L_data), Matrix(U_data))
+
+    def qr(self) -> Tuple["Matrix", "Matrix"]:
+        """
+        Compute QR decomposition of an m x n matrix (m >= n): A = Q @ R.
+        
+        Returns
+        -------
+        Tuple[Matrix, Matrix]
+            (Q, R) where Q is an m x n orthogonal matrix (Q^T @ Q = I)
+            and R is an n x n upper triangular matrix.
+        """
+        m, n = self._rows, self._cols
+        if m < n:
+            raise ValueError(f"QR decomposition requires rows >= cols (m >= n), got shape {self.shape}")
+
+        A_arr = self._to_c_array()
+        Q_arr = (ctypes.c_double * (m * n))()
+        R_arr = (ctypes.c_double * (n * n))()
+
+        status = _c_matrix_qr(A_arr, m, n, Q_arr, R_arr)
+        if status == -1:
+            raise ValueError("Matrix has linearly dependent columns; QR decomposition failed")
+        elif status < 0:
+            raise ValueError(f"QR decomposition failed with error code {status}")
+
+        Q_data = [list(Q_arr[i * n : (i + 1) * n]) for i in range(m)]
+        R_data = [list(R_arr[i * n : (i + 1) * n]) for i in range(n)]
+
+        return (Matrix(Q_data), Matrix(R_data))
+
+    def cholesky(self) -> "Matrix":
+        """
+        Compute Cholesky decomposition of a symmetric positive-definite matrix: A = L @ L^T.
+        
+        Returns
+        -------
+        Matrix
+            Lower triangular matrix L with positive diagonal elements.
+        """
+        if not self.is_square:
+            raise ValueError(f"Cholesky decomposition requires a square symmetric matrix, got shape {self.shape}")
+
+        n = self._rows
+        A_arr = self._to_c_array()
+        L_arr = (ctypes.c_double * (n * n))()
+
+        status = _c_matrix_cholesky(A_arr, n, L_arr)
+        if status == -1:
+            raise ValueError("Matrix is not symmetric positive-definite; Cholesky decomposition failed")
+        elif status < 0:
+            raise ValueError(f"Cholesky decomposition failed with error code {status}")
+
+        L_data = [list(L_arr[i * n : (i + 1) * n]) for i in range(n)]
+        return Matrix(L_data)
+
+    def inv(self) -> "Matrix":
+        """
+        Compute the multiplicative inverse of a square matrix A^(-1) in native C via LU decomposition.
+        """
+        if not self.is_square:
+            raise ValueError(f"Matrix inverse requires a square matrix, got shape {self.shape}")
+
+        n = self._rows
+        A_arr = self._to_c_array()
+        inv_arr = (ctypes.c_double * (n * n))()
+
+        status = _c_matrix_inverse(A_arr, n, inv_arr)
+        if status == -1:
+            raise ValueError("Matrix is singular and cannot be inverted")
+        elif status < 0:
+            raise ValueError(f"Matrix inversion failed with error code {status}")
+
+        inv_data = [list(inv_arr[i * n : (i + 1) * n]) for i in range(n)]
+        return Matrix(inv_data)
+
+    def inverse(self) -> "Matrix":
+        """Alias for inv()."""
+        return self.inv()
+
     def __matmul__(self, other: Union["Matrix", Vector, Sequence[Sequence[Union[int, float]]]]) -> Union["Matrix", Vector]:
         if isinstance(other, Vector):
             # Matrix-vector multiplication: A (m x n) * v (n) -> Vector (m)
@@ -515,6 +654,67 @@ def solve_linear(
     return Matrix(A).solve(Vector(b))
 
 
+def lu(A: Sequence[Sequence[Union[int, float]]]) -> Tuple[Matrix, Matrix, Matrix]:
+    """Compute LU decomposition with partial pivoting: P @ A = L @ U."""
+    return Matrix(A).lu()
+
+
+def qr(A: Sequence[Sequence[Union[int, float]]]) -> Tuple[Matrix, Matrix]:
+    """Compute QR decomposition: A = Q @ R."""
+    return Matrix(A).qr()
+
+
+def cholesky(A: Sequence[Sequence[Union[int, float]]]) -> Matrix:
+    """Compute Cholesky decomposition of symmetric positive-definite matrix: A = L @ L^T."""
+    return Matrix(A).cholesky()
+
+
+def inv(A: Sequence[Sequence[Union[int, float]]]) -> Matrix:
+    """Compute matrix inverse A^(-1)."""
+    return Matrix(A).inv()
+
+
+def inverse(A: Sequence[Sequence[Union[int, float]]]) -> Matrix:
+    """Alias for inv(A)."""
+    return Matrix(A).inv()
+
+
+def solve_least_squares(
+    A: Sequence[Sequence[Union[int, float]]],
+    b: Sequence[Union[int, float]],
+) -> Vector:
+    """
+    Solve linear least squares problem min ||A * x - b||_2 for overdetermined system (m >= n)
+    using QR decomposition in native C.
+    """
+    A_mat = Matrix(A)
+    b_vec = Vector(b)
+    m, n = A_mat.rows, A_mat.cols
+
+    if m < n:
+        raise ValueError(f"Least squares solver requires rows >= cols (m >= n), got shape {A_mat.shape}")
+    if b_vec.dim != m:
+        raise ValueError(f"Dimension mismatch: matrix has {m} rows, but RHS vector has dimension {b_vec.dim}")
+
+    A_arr = A_mat._to_c_array()
+    Q_arr = (ctypes.c_double * (m * n))()
+    R_arr = (ctypes.c_double * (n * n))()
+
+    status = _c_matrix_qr(A_arr, m, n, Q_arr, R_arr)
+    if status == -1:
+        raise ValueError("Matrix has linearly dependent columns; least squares solution is not unique")
+    elif status < 0:
+        raise ValueError(f"QR decomposition failed with error code {status}")
+
+    x_arr = (ctypes.c_double * n)()
+    b_arr = b_vec._to_c_array()
+    status = _c_qr_solve(Q_arr, R_arr, b_arr, m, n, x_arr)
+    if status < 0:
+        raise ValueError(f"Least squares solve failed with error code {status}")
+
+    return Vector(list(x_arr))
+
+
 __all__ = [
     "Vector",
     "Matrix",
@@ -526,4 +726,10 @@ __all__ = [
     "transpose",
     "determinant",
     "solve_linear",
+    "lu",
+    "qr",
+    "cholesky",
+    "inv",
+    "inverse",
+    "solve_least_squares",
 ]
