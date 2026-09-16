@@ -237,6 +237,39 @@ MYMATH_API int numerical_derivative(int func_id, double x, double h, double *res
  */
 MYMATH_API int numerical_derivative_poly(const double *coeffs, int num_coeffs, double x, double h, double *result);
 
+/**
+ * Finds a root of f(x) = 0 starting from x0 using the Newton-Raphson method.
+ * Uses central difference for derivative calculation in C.
+ *
+ * Status return codes:
+ *  0 = success (root written to *root)
+ * -2 = failed to converge within max_iter
+ * -3 = invalid parameters (tol <= 0, max_iter <= 0, or unknown func_id)
+ * -4 = zero derivative encountered (division by zero)
+ */
+MYMATH_API int newton_raphson_method(int func_id, double x0, double tol, int max_iter, double *root);
+
+/**
+ * Finds a root of a polynomial P(x) = 0 starting from x0 using Newton-Raphson with exact analytical derivative in C.
+ */
+MYMATH_API int newton_poly(const double *coeffs, int num_coeffs, double x0, double tol, int max_iter, double *root);
+
+/**
+ * Finds a root of f(x) = 0 using the Secant method with two initial approximations x0 and x1.
+ *
+ * Status return codes:
+ *  0 = success (root written to *root)
+ * -2 = failed to converge within max_iter
+ * -3 = invalid parameters (tol <= 0, max_iter <= 0, or unknown func_id)
+ * -4 = zero slope encountered between iterations (f(x1) == f(x0))
+ */
+MYMATH_API int secant_method(int func_id, double x0, double x1, double tol, int max_iter, double *root);
+
+/**
+ * Finds a root of a polynomial P(x) = 0 using the Secant method.
+ */
+MYMATH_API int secant_poly(const double *coeffs, int num_coeffs, double x0, double x1, double tol, int max_iter, double *root);
+
 #ifdef __cplusplus
 }
 #endif

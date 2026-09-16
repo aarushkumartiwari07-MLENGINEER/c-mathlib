@@ -400,6 +400,158 @@ int numerical_derivative_poly(const double *coeffs, int num_coeffs, double x, do
     return 0;
 }
 
+static double eval_poly_derivative(const double *coeffs, int num_coeffs, double x) {
+    if (num_coeffs <= 1 || coeffs == (void*)0) {
+        return 0.0;
+    }
+    double result = (num_coeffs - 1) * coeffs[num_coeffs - 1];
+    for (int i = num_coeffs - 2; i >= 1; i--) {
+        result = result * x + i * coeffs[i];
+    }
+    return result;
+}
+
+int newton_raphson_method(int func_id, double x0, double tol, int max_iter, double *root) {
+    if (tol <= 0.0 || max_iter <= 0 || root == (void*)0) {
+        return -3;
+    }
+    if (func_id < 0 || func_id > 9) {
+        return -3;
+    }
+
+    double x = x0;
+    double h = 1e-6;
+
+    for (int iter = 0; iter < max_iter; iter++) {
+        double fx = eval_math_func(func_id, x);
+        if (fabs(fx) < tol) {
+            *root = x;
+            return 0;
+        }
+
+        double dfx;
+        numerical_derivative(func_id, x, h, &dfx);
+        if (fabs(dfx) < 1e-14) {
+            return -4;
+        }
+
+        double delta = fx / dfx;
+        x -= delta;
+
+        if (fabs(delta) < tol) {
+            *root = x;
+            return 0;
+        }
+    }
+
+    *root = x;
+    return -2;
+}
+
+int newton_poly(const double *coeffs, int num_coeffs, double x0, double tol, int max_iter, double *root) {
+    if (tol <= 0.0 || max_iter <= 0 || root == (void*)0 || coeffs == (void*)0 || num_coeffs <= 0) {
+        return -3;
+    }
+
+    double x = x0;
+    for (int iter = 0; iter < max_iter; iter++) {
+        double fx = eval_polynomial(coeffs, num_coeffs, x);
+        if (fabs(fx) < tol) {
+            *root = x;
+            return 0;
+        }
+
+        double dfx = eval_poly_derivative(coeffs, num_coeffs, x);
+        if (fabs(dfx) < 1e-14) {
+            return -4;
+        }
+
+        double delta = fx / dfx;
+        x -= delta;
+
+        if (fabs(delta) < tol) {
+            *root = x;
+            return 0;
+        }
+    }
+
+    *root = x;
+    return -2;
+}
+
+int secant_method(int func_id, double x0, double x1, double tol, int max_iter, double *root) {
+    if (tol <= 0.0 || max_iter <= 0 || root == (void*)0) {
+        return -3;
+    }
+    if (func_id < 0 || func_id > 9) {
+        return -3;
+    }
+
+    double f0 = eval_math_func(func_id, x0);
+    double f1 = eval_math_func(func_id, x1);
+
+    for (int iter = 0; iter < max_iter; iter++) {
+        if (fabs(f1) < tol) {
+            *root = x1;
+            return 0;
+        }
+
+        double denom = f1 - f0;
+        if (fabs(denom) < 1e-14) {
+            return -4;
+        }
+
+        double x_next = x1 - f1 * (x1 - x0) / denom;
+        x0 = x1;
+        f0 = f1;
+        x1 = x_next;
+        f1 = eval_math_func(func_id, x1);
+
+        if (fabs(x1 - x0) < tol) {
+            *root = x1;
+            return 0;
+        }
+    }
+
+    *root = x1;
+    return -2;
+}
+
+int secant_poly(const double *coeffs, int num_coeffs, double x0, double x1, double tol, int max_iter, double *root) {
+    if (tol <= 0.0 || max_iter <= 0 || root == (void*)0 || coeffs == (void*)0 || num_coeffs <= 0) {
+        return -3;
+    }
+
+    double f0 = eval_polynomial(coeffs, num_coeffs, x0);
+    double f1 = eval_polynomial(coeffs, num_coeffs, x1);
+
+    for (int iter = 0; iter < max_iter; iter++) {
+        if (fabs(f1) < tol) {
+            *root = x1;
+            return 0;
+        }
+
+        double denom = f1 - f0;
+        if (fabs(denom) < 1e-14) {
+            return -4;
+        }
+
+        double x_next = x1 - f1 * (x1 - x0) / denom;
+        x0 = x1;
+        f0 = f1;
+        x1 = x_next;
+        f1 = eval_polynomial(coeffs, num_coeffs, x1);
+
+        if (fabs(x1 - x0) < tol) {
+            *root = x1;
+            return 0;
+        }
+    }
+
+    *root = x1;
+    return -2;
+}
+
 
 
 

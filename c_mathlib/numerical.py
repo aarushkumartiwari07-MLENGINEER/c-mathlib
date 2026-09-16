@@ -87,6 +87,50 @@ _c_numerical_derivative_poly.argtypes = [
 ]
 _c_numerical_derivative_poly.restype = ctypes.c_int
 
+_c_newton_raphson_method = _lib.newton_raphson_method
+_c_newton_raphson_method.argtypes = [
+    ctypes.c_int,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_int,
+    _c_double_p,
+]
+_c_newton_raphson_method.restype = ctypes.c_int
+
+_c_newton_poly = _lib.newton_poly
+_c_newton_poly.argtypes = [
+    _c_double_p,
+    ctypes.c_int,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_int,
+    _c_double_p,
+]
+_c_newton_poly.restype = ctypes.c_int
+
+_c_secant_method = _lib.secant_method
+_c_secant_method.argtypes = [
+    ctypes.c_int,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_int,
+    _c_double_p,
+]
+_c_secant_method.restype = ctypes.c_int
+
+_c_secant_poly = _lib.secant_poly
+_c_secant_poly.argtypes = [
+    _c_double_p,
+    ctypes.c_int,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_int,
+    _c_double_p,
+]
+_c_secant_poly.restype = ctypes.c_int
+
 
 # ==============================================================================
 # Built-in Function ID Mappings
@@ -436,10 +480,161 @@ def derivative(
     return float(c_result.value)
 
 
+def newton(
+    func: Union[str, Sequence[Union[int, float]], Polynomial],
+    x0: Union[int, float],
+    tol: float = 1e-7,
+    max_iter: int = 100,
+) -> float:
+    """
+    Find a root of f(x) = 0 starting from initial guess x0 using the Newton-Raphson method.
+
+    Executed in native C. Newton-Raphson achieves quadratic convergence rate O(error^2) near simple roots.
+    For polynomials, exact analytical derivatives are evaluated via Horner's method in C.
+    For built-in functions, high-precision finite difference derivatives are used.
+
+    Parameters
+    ----------
+    func : str or Sequence[float] or Polynomial
+        The mathematical function or polynomial to solve.
+    x0 : float or int
+        Initial root approximation.
+    tol : float, default=1e-7
+        Convergence tolerance on residual and step size.
+    max_iter : int, default=100
+        Maximum number of iterations.
+
+    Returns
+    -------
+    float
+        Approximate root x such that |f(x)| < tol.
+
+    Raises
+    ------
+    TypeError
+        If parameters have invalid types.
+    ValueError
+        If tol <= 0, max_iter <= 0, or if zero derivative is encountered.
+    RuntimeError
+        If maximum iterations are reached without converging.
+    """
+    for name, val in [("x0", x0), ("tol", tol)]:
+        if isinstance(val, bool) or not isinstance(val, (int, float)):
+            raise TypeError(f"newton() parameter '{name}' must be numeric, got {type(val).__name__}")
+    if isinstance(max_iter, bool) or not isinstance(max_iter, int):
+        raise TypeError(f"newton() max_iter must be an integer, got {type(max_iter).__name__}")
+
+    if tol <= 0:
+        raise ValueError(f"newton() tolerance must be positive (> 0), got {tol}")
+    if max_iter <= 0:
+        raise ValueError(f"newton() max_iter must be positive (> 0), got {max_iter}")
+
+    is_poly, payload = _resolve_target(func)
+    c_x0 = float(x0)
+    c_tol = float(tol)
+    c_max_iter = int(max_iter)
+    c_root = ctypes.c_double()
+
+    if is_poly:
+        coeffs_array = (ctypes.c_double * len(payload))(*payload)
+        status = _c_newton_poly(coeffs_array, len(payload), c_x0, c_tol, c_max_iter, ctypes.byref(c_root))
+    else:
+        status = _c_newton_raphson_method(int(payload), c_x0, c_tol, c_max_iter, ctypes.byref(c_root))
+
+    if status == 0:
+        return float(c_root.value)
+    elif status == -2:
+        raise RuntimeError(f"newton() failed to converge within {max_iter} iterations (last estimate: {c_root.value:.7g})")
+    elif status == -4:
+        raise ValueError("newton() encountered a zero derivative (local extremum or stationary point); cannot continue")
+    elif status == -3:
+        raise ValueError("newton() received invalid parameters")
+    else:
+        raise ValueError(f"newton() failed with status code {status}")
+
+
+def secant(
+    func: Union[str, Sequence[Union[int, float]], Polynomial],
+    x0: Union[int, float],
+    x1: Union[int, float],
+    tol: float = 1e-7,
+    max_iter: int = 100,
+) -> float:
+    """
+    Find a root of f(x) = 0 using the Secant method with two initial approximations x0 and x1.
+
+    Executed in native C. The Secant method exhibits superlinear convergence (order ~ 1.618)
+    without requiring analytical or numerical derivatives.
+
+    Parameters
+    ----------
+    func : str or Sequence[float] or Polynomial
+        The mathematical function or polynomial to solve.
+    x0 : float or int
+        First initial root approximation.
+    x1 : float or int
+        Second initial root approximation.
+    tol : float, default=1e-7
+        Convergence tolerance.
+    max_iter : int, default=100
+        Maximum number of iterations.
+
+    Returns
+    -------
+    float
+        Approximate root x.
+
+    Raises
+    ------
+    TypeError
+        If parameters have invalid types.
+    ValueError
+        If tol <= 0, max_iter <= 0, or if zero slope is encountered between iterations.
+    RuntimeError
+        If maximum iterations are reached without converging.
+    """
+    for name, val in [("x0", x0), ("x1", x1), ("tol", tol)]:
+        if isinstance(val, bool) or not isinstance(val, (int, float)):
+            raise TypeError(f"secant() parameter '{name}' must be numeric, got {type(val).__name__}")
+    if isinstance(max_iter, bool) or not isinstance(max_iter, int):
+        raise TypeError(f"secant() max_iter must be an integer, got {type(max_iter).__name__}")
+
+    if tol <= 0:
+        raise ValueError(f"secant() tolerance must be positive (> 0), got {tol}")
+    if max_iter <= 0:
+        raise ValueError(f"secant() max_iter must be positive (> 0), got {max_iter}")
+
+    is_poly, payload = _resolve_target(func)
+    c_x0 = float(x0)
+    c_x1 = float(x1)
+    c_tol = float(tol)
+    c_max_iter = int(max_iter)
+    c_root = ctypes.c_double()
+
+    if is_poly:
+        coeffs_array = (ctypes.c_double * len(payload))(*payload)
+        status = _c_secant_poly(coeffs_array, len(payload), c_x0, c_x1, c_tol, c_max_iter, ctypes.byref(c_root))
+    else:
+        status = _c_secant_method(int(payload), c_x0, c_x1, c_tol, c_max_iter, ctypes.byref(c_root))
+
+    if status == 0:
+        return float(c_root.value)
+    elif status == -2:
+        raise RuntimeError(f"secant() failed to converge within {max_iter} iterations (last estimate: {c_root.value:.7g})")
+    elif status == -4:
+        raise ValueError("secant() encountered a zero slope between iterations (f(x1) == f(x0)); cannot continue")
+    elif status == -3:
+        raise ValueError("secant() received invalid parameters")
+    else:
+        raise ValueError(f"secant() failed with status code {status}")
+
+
 __all__ = [
     "Polynomial",
     "evaluate",
     "bisection",
     "simpson",
     "derivative",
+    "newton",
+    "secant",
 ]
