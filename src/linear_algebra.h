@@ -1,14 +1,16 @@
 #ifndef LINEAR_ALGEBRA_H
 #define LINEAR_ALGEBRA_H
 
-#ifdef _WIN32
-  #ifdef BUILDING_MYMATH_DLL
-    #define MYMATH_API __declspec(dllexport)
+#ifndef MYMATH_API
+  #ifdef _WIN32
+    #ifdef BUILDING_MYMATH_DLL
+      #define MYMATH_API __declspec(dllexport)
+    #else
+      #define MYMATH_API __declspec(dllimport)
+    #endif
   #else
-    #define MYMATH_API __declspec(dllimport)
+    #define MYMATH_API
   #endif
-#else
-  #define MYMATH_API
 #endif
 
 #ifdef __cplusplus

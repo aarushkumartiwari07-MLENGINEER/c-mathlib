@@ -47,7 +47,7 @@ def main():
         res = mod_pow(base, exp, mod)
         print(f"({base}^{exp}) mod {mod} = {res}")
 
-    # 5. Extended Euclidean Algorithm (Bézout's identity)
+    # 5. Extended Euclidean Algorithm (Bezout's identity)
     print("\n--- 5. Extended Euclidean Algorithm (extended_gcd) ---")
     for a, b in [(30, 12), (35, 15), (1071, 462), (17, 19)]:
         g, x, y = extended_gcd(a, b)

@@ -20,7 +20,7 @@ int is_prime(int n) {
     }
 
     /*
-     * Check divisors of the form (6k ± 1) up to sqrt(n).
+     * Check divisors of the form (6k +/- 1) up to sqrt(n).
      * Any integer can be expressed as (6k + i) for i in {0, 1, 2, 3, 4, 5}.
      * Since 6k, 6k+2, 6k+3, 6k+4 are divisible by 2 or 3, we only need to test
      * 6k-1 and 6k+1 (starting at i = 5).
@@ -114,6 +114,24 @@ long long fibonacci(int n) {
     return curr;
 }
 
+static inline unsigned long long mul_mod_u64(unsigned long long a, unsigned long long b, unsigned long long m) {
+#if (defined(__GNUC__) || defined(__clang__)) && defined(__SIZEOF_INT128__)
+    __extension__ typedef unsigned __int128 uint128_t;
+    return (unsigned long long)(((uint128_t)a * (uint128_t)b) % (uint128_t)m);
+#else
+    unsigned long long res = 0;
+    a %= m;
+    while (b > 0) {
+        if (b & 1) {
+            res = (res + a) % m;
+        }
+        a = (a * 2) % m;
+        b >>= 1;
+    }
+    return res;
+#endif
+}
+
 long long mod_pow(long long base, long long exponent, long long modulus) {
     if (modulus <= 0 || exponent < 0) {
         return -1;
@@ -122,22 +140,24 @@ long long mod_pow(long long base, long long exponent, long long modulus) {
         return 0;
     }
 
-    long long result = 1;
-    base = base % modulus;
-    if (base < 0) {
-        base += modulus;
+    unsigned long long result = 1;
+    long long b_rem = base % modulus;
+    if (b_rem < 0) {
+        b_rem += modulus;
     }
+    unsigned long long b_u = (unsigned long long)b_rem;
+    unsigned long long m_u = (unsigned long long)modulus;
 
     /* Exponentiation by squaring: O(log exponent) complexity */
     while (exponent > 0) {
         if (exponent & 1) {
-            result = (long long)(((unsigned __int128)result * (unsigned long long)base) % (unsigned long long)modulus);
+            result = mul_mod_u64(result, b_u, m_u);
         }
-        base = (long long)(((unsigned __int128)base * (unsigned long long)base) % (unsigned long long)modulus);
+        b_u = mul_mod_u64(b_u, b_u, m_u);
         exponent >>= 1;
     }
 
-    return result;
+    return (long long)result;
 }
 
 long long extended_gcd(long long a, long long b, long long *x, long long *y) {
@@ -161,7 +181,7 @@ long long extended_gcd(long long a, long long b, long long *x, long long *y) {
         t = temp_t;
     }
 
-    /* Ensure returned GCD is non-negative and Bézout identity a*x + b*y = g holds */
+    /* Ensure returned GCD is non-negative and Bezout identity a*x + b*y = g holds */
     if (old_r < 0) {
         old_r = -old_r;
         old_s = -old_s;
@@ -191,7 +211,7 @@ long long mod_inverse(long long a, long long modulus) {
         return -1;
     }
 
-    /* Map Bézout coefficient to standard range [0, modulus - 1] */
+    /* Map Bezout coefficient to standard range [0, modulus - 1] */
     long long inv = (x % modulus + modulus) % modulus;
     return inv;
 }

@@ -75,7 +75,7 @@ class TestModularArithmetic(unittest.TestCase):
     # --------------------------------------------------------------------------
 
     def test_extended_gcd_standard(self):
-        """Test Bézout's identity: a*x + b*y == gcd(a, b)."""
+        """Test Bezout's identity: a*x + b*y == gcd(a, b)."""
         test_pairs = [
             (30, 12),
             (35, 15),
@@ -91,7 +91,7 @@ class TestModularArithmetic(unittest.TestCase):
         ]
         for a, b in test_pairs:
             g, x, y = extended_gcd(a, b)
-            self.assertEqual(a * x + b * y, g, f"Bézout identity failed for ({a}, {b})")
+            self.assertEqual(a * x + b * y, g, f"Bezout identity failed for ({a}, {b})")
             self.assertGreaterEqual(g, 0, f"GCD must be non-negative for ({a}, {b})")
 
     def test_extended_gcd_values(self):

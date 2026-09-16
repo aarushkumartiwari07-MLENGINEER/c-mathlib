@@ -11,14 +11,16 @@ extern "C" {
  * exported with __declspec(dllexport).
  * On Linux/macOS, functions are visible by default.
  */
-#ifdef _WIN32
-  #ifdef BUILDING_MYMATH_DLL
-    #define MYMATH_API __declspec(dllexport)
+#ifndef MYMATH_API
+  #ifdef _WIN32
+    #ifdef BUILDING_MYMATH_DLL
+      #define MYMATH_API __declspec(dllexport)
+    #else
+      #define MYMATH_API __declspec(dllimport)
+    #endif
   #else
-    #define MYMATH_API __declspec(dllimport)
+    #define MYMATH_API
   #endif
-#else
-  #define MYMATH_API
 #endif
 
 /**
@@ -108,13 +110,13 @@ MYMATH_API long long fibonacci(int n);
 MYMATH_API long long mod_pow(long long base, long long exponent, long long modulus);
 
 /**
- * Extended Euclidean Algorithm: computes gcd(a, b) and Bézout coefficients x and y
+ * Extended Euclidean Algorithm: computes gcd(a, b) and Bezout coefficients x and y
  * such that: a*x + b*y = gcd(a, b).
  *
  * @param a First integer.
  * @param b Second integer.
- * @param x Output pointer for Bézout coefficient of a.
- * @param y Output pointer for Bézout coefficient of b.
+ * @param x Output pointer for Bezout coefficient of a.
+ * @param y Output pointer for Bezout coefficient of b.
  * @return The greatest common divisor gcd(|a|, |b|).
  */
 MYMATH_API long long extended_gcd(long long a, long long b, long long *x, long long *y);

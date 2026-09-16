@@ -6,7 +6,7 @@ and numerical differentiation (central difference) executed in native C.
 """
 
 import ctypes
-from typing import Sequence, Union
+from typing import List, Sequence, Tuple, Union
 from .core import _lib
 
 
@@ -145,7 +145,7 @@ class Polynomial:
         self._coeffs = parsed
 
     @property
-    def coeffs(self) -> list[float]:
+    def coeffs(self) -> List[float]:
         return list(self._coeffs)
 
     @property
@@ -168,13 +168,13 @@ class Polynomial:
 
 def _resolve_target(
     func: Union[str, Sequence[Union[int, float]], Polynomial]
-) -> tuple[bool, Union[int, list[float]]]:
+) -> Tuple[bool, Union[int, List[float]]]:
     """
     Resolves the input function into either a built-in function ID or a polynomial coefficient array.
     
     Returns
     -------
-    tuple[bool, Union[int, list[float]]]
+    Tuple[bool, Union[int, List[float]]]
         (is_poly, payload) where payload is func_id if is_poly is False, else list of floats.
     """
     if isinstance(func, Polynomial):

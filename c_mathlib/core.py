@@ -2,6 +2,7 @@ import ctypes
 import os
 import sys
 from pathlib import Path
+from typing import Tuple
 
 
 def _find_and_load_library() -> ctypes.CDLL:
@@ -352,11 +353,11 @@ def mod_pow(base: int, exponent: int, modulus: int) -> int:
     return int(_c_mod_pow(base, exponent, modulus))
 
 
-def extended_gcd(a: int, b: int) -> tuple[int, int, int]:
+def extended_gcd(a: int, b: int) -> Tuple[int, int, int]:
     """
     Compute the Extended Euclidean Algorithm for two integers a and b.
 
-    Finds the greatest common divisor g = gcd(|a|, |b|) along with Bézout coefficients
+    Finds the greatest common divisor g = gcd(|a|, |b|) along with Bezout coefficients
     x and y satisfying the identity:
         a * x + b * y = g
 
@@ -369,8 +370,8 @@ def extended_gcd(a: int, b: int) -> tuple[int, int, int]:
 
     Returns
     -------
-    tuple[int, int, int]
-        A 3-tuple (g, x, y) where g is the non-negative GCD, and x, y are Bézout coefficients.
+    Tuple[int, int, int]
+        A 3-tuple (g, x, y) where g is the non-negative GCD, and x, y are Bezout coefficients.
 
     Raises
     ------
