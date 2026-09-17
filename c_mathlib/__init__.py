@@ -19,10 +19,20 @@ from .combinatorics import (
     nCr,
     nPr,
 )
+from .special import (
+    gamma,
+    lgamma,
+    beta,
+    erf,
+    erfc,
+    sigmoid,
+    softmax,
+)
 from . import numerical
 from . import linear_algebra
 from . import statistics
 from . import combinatorics
+from . import special
 
 __version__ = "0.1.0"
 __all__ = [
@@ -39,10 +49,18 @@ __all__ = [
     "euler_totient",
     "nCr",
     "nPr",
+    "gamma",
+    "lgamma",
+    "beta",
+    "erf",
+    "erfc",
+    "sigmoid",
+    "softmax",
     "numerical",
     "linear_algebra",
     "statistics",
     "combinatorics",
+    "special",
 ]
 
 
