@@ -156,6 +156,31 @@ _c_rk4_poly.argtypes = [
 ]
 _c_rk4_poly.restype = ctypes.c_int
 
+_c_golden_section_minimize = _lib.golden_section_minimize
+_c_golden_section_minimize.argtypes = [
+    ctypes.c_int,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_int,
+    _c_double_p,
+    _c_double_p,
+]
+_c_golden_section_minimize.restype = ctypes.c_int
+
+_c_golden_section_poly = _lib.golden_section_poly
+_c_golden_section_poly.argtypes = [
+    _c_double_p,
+    ctypes.c_int,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_double,
+    ctypes.c_int,
+    _c_double_p,
+    _c_double_p,
+]
+_c_golden_section_poly.restype = ctypes.c_int
+
 
 # ==============================================================================
 # Built-in Function & ODE ID Mappings
@@ -776,9 +801,123 @@ def rk4(
     return ODEResult(list(t_out), list(y_out))
 
 
+class OptimizeResult:
+    """
+    Container for 1D scalar optimization results.
+
+    Attributes
+    ----------
+    x : float
+        The solution / minimizer found.
+    fun : float
+        The objective function value evaluated at the minimizer x.
+    nit : int
+        Number of iterations performed.
+    converged : bool
+        Whether the optimization algorithm reached the desired tolerance.
+    """
+    def __init__(self, x: float, fun: float, nit: int, converged: bool):
+        self.x = float(x)
+        self.fun = float(fun)
+        self.nit = int(nit)
+        self.converged = bool(converged)
+
+    def __repr__(self) -> str:
+        return f"OptimizeResult(x={self.x:.8g}, fun={self.fun:.8g}, nit={self.nit}, converged={self.converged})"
+
+
+def minimize_1d(
+    func: Union[str, Sequence[Union[int, float]], Polynomial],
+    bracket: Tuple[Union[int, float], Union[int, float]],
+    tol: float = 1e-6,
+    max_iter: int = 500,
+) -> OptimizeResult:
+    """
+    Find a local minimum of a unimodal 1D function inside interval bracket [a, b]
+    using Golden Section Search in native C.
+
+    Parameters
+    ----------
+    func : str, Sequence[float], or Polynomial
+        Target function name (e.g. 'x^2', 'sin', 'cos', 'exp') or polynomial.
+    bracket : tuple of (float, float)
+        Interval (a, b) containing the local minimum.
+    tol : float, default=1e-6
+        Precision stopping criterion (|b - a| < tol). Must be > 0.
+    max_iter : int, default=500
+        Maximum iterations allowed. Must be >= 1.
+
+    Returns
+    -------
+    OptimizeResult
+        Optimization result object with .x, .fun, .nit, and .converged.
+
+    Raises
+    ------
+    TypeError
+        If inputs have invalid types.
+    ValueError
+        If tol <= 0, max_iter < 1, or unknown function model.
+    """
+    if not isinstance(bracket, (tuple, list)) or len(bracket) != 2:
+        raise TypeError(f"minimize_1d() bracket must be a 2-tuple (a, b), got {bracket}")
+    if isinstance(bracket[0], bool) or not isinstance(bracket[0], (int, float)):
+        raise TypeError(f"minimize_1d() bracket[0] must be numeric, got {type(bracket[0]).__name__}")
+    if isinstance(bracket[1], bool) or not isinstance(bracket[1], (int, float)):
+        raise TypeError(f"minimize_1d() bracket[1] must be numeric, got {type(bracket[1]).__name__}")
+
+    if isinstance(tol, bool) or not isinstance(tol, (int, float)):
+        raise TypeError(f"minimize_1d() tol must be a float, got {type(tol).__name__}")
+    if tol <= 0:
+        raise ValueError(f"minimize_1d() tol must be positive, got {tol}")
+
+    if isinstance(max_iter, bool) or not isinstance(max_iter, int):
+        raise TypeError(f"minimize_1d() max_iter must be an integer, got {type(max_iter).__name__}")
+    if max_iter < 1:
+        raise ValueError(f"minimize_1d() max_iter must be >= 1, got {max_iter}")
+
+    a, b = float(bracket[0]), float(bracket[1])
+    is_poly, payload = _resolve_target(func)
+
+    c_min_x = ctypes.c_double()
+    c_min_val = ctypes.c_double()
+
+    if is_poly:
+        coeffs_array = (ctypes.c_double * len(payload))(*payload)
+        status = _c_golden_section_poly(
+            coeffs_array,
+            len(payload),
+            a,
+            b,
+            float(tol),
+            int(max_iter),
+            ctypes.byref(c_min_x),
+            ctypes.byref(c_min_val),
+        )
+    else:
+        status = _c_golden_section_minimize(
+            int(payload),
+            a,
+            b,
+            float(tol),
+            int(max_iter),
+            ctypes.byref(c_min_x),
+            ctypes.byref(c_min_val),
+        )
+
+    if status == -1:
+        raise ValueError(f"minimize_1d() invalid parameters or computation error.")
+    if status == -2:
+        # Max iterations reached without converging to tolerance
+        return OptimizeResult(c_min_x.value, c_min_val.value, max_iter, converged=False)
+
+    return OptimizeResult(c_min_x.value, c_min_val.value, status, converged=True)
+
+
 __all__ = [
     "Polynomial",
     "ODEResult",
+    "OptimizeResult",
     "evaluate",
     "bisection",
     "simpson",
@@ -786,4 +925,5 @@ __all__ = [
     "newton",
     "secant",
     "rk4",
+    "minimize_1d",
 ]

@@ -320,6 +320,43 @@ MYMATH_API int rk4_poly(
     double *y_out
 );
 
+/**
+ * Finds a local minimum of a unimodal 1D function f(x) inside bracket [a, b]
+ * using the Golden Section Search algorithm.
+ *
+ * @param func_id Built-in function identifier.
+ * @param a Left bracket boundary.
+ * @param b Right bracket boundary.
+ * @param tol Target precision tolerance (|b - a| < tol).
+ * @param max_iter Maximum iterations.
+ * @param min_x Output pointer for minimum location x*.
+ * @param min_val Output pointer for minimum function value f(x*).
+ * @return Number of iterations on success, -1 on invalid inputs, -2 if max_iter exceeded.
+ */
+MYMATH_API int golden_section_minimize(
+    int func_id,
+    double a,
+    double b,
+    double tol,
+    int max_iter,
+    double *min_x,
+    double *min_val
+);
+
+/**
+ * Finds a local minimum of a polynomial P(x) inside bracket [a, b] using Golden Section Search in C.
+ */
+MYMATH_API int golden_section_poly(
+    const double *coeffs,
+    int num_coeffs,
+    double a,
+    double b,
+    double tol,
+    int max_iter,
+    double *min_x,
+    double *min_val
+);
+
 #ifdef __cplusplus
 }
 #endif

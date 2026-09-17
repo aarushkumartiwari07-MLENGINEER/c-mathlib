@@ -639,6 +639,116 @@ int rk4_poly(
     return 0;
 }
 
+#define GOLDEN_RATIO_INV 0.61803398874989484820
+
+int golden_section_minimize(
+    int func_id,
+    double a,
+    double b,
+    double tol,
+    int max_iter,
+    double *min_x,
+    double *min_val
+) {
+    if (tol <= 0.0 || max_iter <= 0 || min_x == (void*)0 || min_val == (void*)0) {
+        return -1;
+    }
+    if (func_id < 0 || func_id > 9) {
+        return -2;
+    }
+
+    if (a > b) {
+        double tmp = a;
+        a = b;
+        b = tmp;
+    }
+
+    double c = b - GOLDEN_RATIO_INV * (b - a);
+    double d = a + GOLDEN_RATIO_INV * (b - a);
+    double fc = eval_math_func(func_id, c);
+    double fd = eval_math_func(func_id, d);
+
+    int iter = 0;
+    while ((b - a) > tol && iter < max_iter) {
+        iter++;
+        if (fc < fd) {
+            b = d;
+            d = c;
+            fd = fc;
+            c = b - GOLDEN_RATIO_INV * (b - a);
+            fc = eval_math_func(func_id, c);
+        } else {
+            a = c;
+            c = d;
+            fc = fd;
+            d = a + GOLDEN_RATIO_INV * (b - a);
+            fd = eval_math_func(func_id, d);
+        }
+    }
+
+    *min_x = 0.5 * (a + b);
+    *min_val = eval_math_func(func_id, *min_x);
+
+    if ((b - a) > tol) {
+        return -2;
+    }
+
+    return iter;
+}
+
+int golden_section_poly(
+    const double *coeffs,
+    int num_coeffs,
+    double a,
+    double b,
+    double tol,
+    int max_iter,
+    double *min_x,
+    double *min_val
+) {
+    if (coeffs == (void*)0 || num_coeffs <= 0 || tol <= 0.0 || max_iter <= 0 || min_x == (void*)0 || min_val == (void*)0) {
+        return -1;
+    }
+
+    if (a > b) {
+        double tmp = a;
+        a = b;
+        b = tmp;
+    }
+
+    double c = b - GOLDEN_RATIO_INV * (b - a);
+    double d = a + GOLDEN_RATIO_INV * (b - a);
+    double fc = eval_polynomial(coeffs, num_coeffs, c);
+    double fd = eval_polynomial(coeffs, num_coeffs, d);
+
+    int iter = 0;
+    while ((b - a) > tol && iter < max_iter) {
+        iter++;
+        if (fc < fd) {
+            b = d;
+            d = c;
+            fd = fc;
+            c = b - GOLDEN_RATIO_INV * (b - a);
+            fc = eval_polynomial(coeffs, num_coeffs, c);
+        } else {
+            a = c;
+            c = d;
+            fc = fd;
+            d = a + GOLDEN_RATIO_INV * (b - a);
+            fd = eval_polynomial(coeffs, num_coeffs, d);
+        }
+    }
+
+    *min_x = 0.5 * (a + b);
+    *min_val = eval_polynomial(coeffs, num_coeffs, *min_x);
+
+    if ((b - a) > tol) {
+        return -2;
+    }
+
+    return iter;
+}
+
 
 
 
